@@ -1,0 +1,6 @@
+@BrightEdu.Web_HostAddress = http://localhost:5164
+
+GET {{BrightEdu.Web_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
