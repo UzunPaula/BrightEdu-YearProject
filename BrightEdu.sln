@@ -2,6 +2,12 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrightEdu.Web", "BrightEdu.Web\BrightEdu.Web.csproj", "{E1699AC3-0329-41B4-AB87-D91FCE032129}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrightEdu.Domain", "BrightEdu.Domain\BrightEdu.Domain.csproj", "{F1B7735E-D7D3-4BA8-B6EE-AF7D4C806BEA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrightEdu.Application", "BrightEdu.Application\BrightEdu.Application.csproj", "{263FFDA1-9B31-4C81-BF6F-4868156EAB87}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrightEdu.Infrastructure", "BrightEdu.Infrastructure\BrightEdu.Infrastructure.csproj", "{119CDCB1-924B-4C46-BBF7-D529D0B703A8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +18,17 @@ Global
 		{E1699AC3-0329-41B4-AB87-D91FCE032129}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1699AC3-0329-41B4-AB87-D91FCE032129}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1699AC3-0329-41B4-AB87-D91FCE032129}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F1B7735E-D7D3-4BA8-B6EE-AF7D4C806BEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1B7735E-D7D3-4BA8-B6EE-AF7D4C806BEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1B7735E-D7D3-4BA8-B6EE-AF7D4C806BEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1B7735E-D7D3-4BA8-B6EE-AF7D4C806BEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{263FFDA1-9B31-4C81-BF6F-4868156EAB87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{263FFDA1-9B31-4C81-BF6F-4868156EAB87}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{263FFDA1-9B31-4C81-BF6F-4868156EAB87}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{263FFDA1-9B31-4C81-BF6F-4868156EAB87}.Release|Any CPU.Build.0 = Release|Any CPU
+		{119CDCB1-924B-4C46-BBF7-D529D0B703A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{119CDCB1-924B-4C46-BBF7-D529D0B703A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{119CDCB1-924B-4C46-BBF7-D529D0B703A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{119CDCB1-924B-4C46-BBF7-D529D0B703A8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
