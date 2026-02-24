@@ -2,6 +2,7 @@ namespace BrightEdu.Domain.Entities;
 
 public abstract class LessonStep
 {
+    public abstract string Type { get; }
     public Guid Id { get; private set; }
     public int Order { get; private set; }
 

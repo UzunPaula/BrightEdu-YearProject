@@ -2,6 +2,7 @@ namespace BrightEdu.Domain.Entities;
 
 public sealed class QuestionStep : LessonStep
 {
+    public override string Type => "question";
     public string QuestionText { get; private set; }
     public IReadOnlyList<string> Options { get; private set; }
     public int CorrectOptionIndex { get; private set; }

@@ -6,6 +6,7 @@ namespace BrightEdu.Application.Interfaces;
 // OCP: adaug un mapper nou pentru un step nou, fără să modific GetLessonService.
 public interface ILessonStepDtoMapper
 {
+    string Type { get; }
     bool CanMap(LessonStep step);
     LessonStepDto Map(LessonStep step);
 }

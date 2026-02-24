@@ -11,5 +11,5 @@ public sealed record ContentStepDto(Guid Id, int Order, string Content)
 
 // Moștenire: DTO concret pentru step de tip întrebare.
 // Setează automat Type = "question" și adaugă întrebarea și opțiunile.
-public sealed record QuestionStepDto(Guid Id, int Order, string QuestionText, IReadOnlyList<string> Options)
+public sealed record QuestionStepDto(Guid Id, int Order, string QuestionText, IReadOnlyList<string> Options, int CorrectOptionIndex)
     : LessonStepDto("question", Id, Order);

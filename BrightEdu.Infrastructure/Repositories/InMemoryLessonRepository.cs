@@ -4,14 +4,24 @@ using BrightEdu.Domain.Entities;
 namespace BrightEdu.Infrastructure.Repositories;
 
 // SRP: acces la date pentru lecții (in-memory) și un sample pentru testare.
+// Stochează lecțiile într-o listă statică pentru testare.
 public sealed class InMemoryLessonRepository : ILessonRepository
 {
-    private static readonly Lesson SampleLesson = CreateSample();
+    private static readonly List<Lesson> _lessons = new List<Lesson>
+    {
+        CreateSample()
+    };
 
     public Task<Lesson?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        if (id == SampleLesson.Id) return Task.FromResult<Lesson?>(SampleLesson);
-        return Task.FromResult<Lesson?>(null);
+        var lesson = _lessons.FirstOrDefault(l => l.Id == id);
+        return Task.FromResult<Lesson?>(lesson);
+    }
+
+    public Task AddAsync(Lesson lesson, CancellationToken ct = default)
+    {
+        _lessons.Add(lesson);
+        return Task.CompletedTask;
     }
 
     private static Lesson CreateSample()
