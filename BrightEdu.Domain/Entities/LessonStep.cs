@@ -1,6 +1,8 @@
+using BrightEdu.Domain.Prototype;
+
 namespace BrightEdu.Domain.Entities;
 
-public abstract class LessonStep
+public abstract class LessonStep : IPrototype<LessonStep>
 {
     public abstract string Type { get; }
     public Guid Id { get; private set; }
@@ -14,4 +16,5 @@ public abstract class LessonStep
         Id = id;
         Order = order;
     }
+    public abstract LessonStep Clone();
 }

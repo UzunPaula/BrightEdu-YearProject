@@ -1,6 +1,6 @@
 namespace BrightEdu.Domain.Entities;
 
-public sealed class QuestionStep : LessonStep
+public class QuestionStep : LessonStep
 {
     public override string Type => "question";
     public string QuestionText { get; private set; }
@@ -21,7 +21,18 @@ public sealed class QuestionStep : LessonStep
             throw new ArgumentException("Index corect invalid.", nameof(correctOptionIndex));
 
         QuestionText = questionText.Trim();
-        Options = options;
+        Options = options.Select(o => o.Trim()).ToList();
         CorrectOptionIndex = correctOptionIndex;
+    }
+    
+    // Creează o copie a pasului de tip conținut
+    public override LessonStep Clone()
+    {
+        return new QuestionStep(
+            Guid.NewGuid(), // ID nou pentru copie
+            Order, // Păstrează aceeași ordine
+            QuestionText,
+            Options.ToList(),
+            CorrectOptionIndex);
     }
 }

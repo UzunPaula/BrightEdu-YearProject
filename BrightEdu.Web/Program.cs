@@ -1,11 +1,16 @@
 using BrightEdu.Application.DesignPatterns.AbstractFactory.Steps;
+using BrightEdu.Application.DesignPatterns.Builder;
 using BrightEdu.Application.DesignPatterns.FactoryMethod.Steps;
+using BrightEdu.Application.DesignPatterns.Singleton;
 using BrightEdu.Application.Features.Courses;
 using BrightEdu.Application.Features.Lessons;
 using BrightEdu.Application.Features.Lessons.Mapper;
 using BrightEdu.Application.Interfaces;
+using BrightEdu.Domain.Entities;
 using BrightEdu.Infrastructure.DesignPatterns.AbstractFactory.Steps;
+using BrightEdu.Infrastructure.DesignPatterns.Builder;
 using BrightEdu.Infrastructure.DesignPatterns.FactoryMethod.Steps;
+using BrightEdu.Infrastructure.DesignPatterns.Singleton;
 using BrightEdu.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +22,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddControllers();
 
-// aici leg contractul la implementare (DIP(Dependency Inversion Principle) în practică)
+// aici leg contractul la implementare (DIP în practică)
 // Repositories
 builder.Services.AddScoped<ICourseReadRepository, InMemoryCourseRepository>();
 builder.Services.AddScoped<ICourseWriteRepository, InMemoryCourseRepository>();
@@ -54,8 +59,54 @@ builder.Services.AddScoped<ILessonStepAbstractFactoryResolver, LessonStepAbstrac
 
 builder.Services.AddScoped<ICreateLessonWithFactoryMethodService, CreateLessonWithFactoryMethodService>();
 builder.Services.AddScoped<ICreateLessonWithAbstractFactoryService, CreateLessonWithAbstractFactoryService>();
+builder.Services.AddScoped<ICreateLessonWithBuilderService, CreateLessonWithBuilderService>();
+builder.Services.AddScoped<ICreateLessonWithPrototypeService, CreateLessonWithPrototypeService>();
+
+builder.Services.AddScoped<ILessonBuilder, LessonBuilder>();
+builder.Services.AddScoped<ILessonDirector, LessonDirector>();
+
+builder.Services.AddSingleton<ILessonTemplateRegistry, LessonTemplateRegistry>();
+builder.Services.AddScoped<ICreateLessonFromTemplateService, CreateLessonFromTemplateService>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var templateRegistry = scope.ServiceProvider.GetRequiredService<ILessonTemplateRegistry>();
+
+    var lesson1 = new Lesson(
+        Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+        "Math Quiz Template");
+
+    lesson1.AddStep(new ContentStep(
+        Guid.NewGuid(),
+        1,
+        "Citește teoria despre fracții."));
+
+    lesson1.AddStep(new QuestionStep(
+        Guid.NewGuid(),
+        2,
+        "Care fracție este mai mare?",
+        new List<string> { "1/4", "1/2", "1/8", "1/10" },
+        1));
+
+    var lesson2 = new Lesson(
+        Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+        "Theory Template");
+
+    lesson2.AddStep(new ContentStep(
+        Guid.NewGuid(),
+        1,
+        "Introducere în lecție."));
+
+    lesson2.AddStep(new ContentStep(
+        Guid.NewGuid(),
+        2,
+        "Explicație suplimentară."));
+
+    templateRegistry.AddTemplate(lesson1);
+    templateRegistry.AddTemplate(lesson2);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

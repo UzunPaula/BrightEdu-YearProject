@@ -1,7 +1,7 @@
 namespace BrightEdu.Domain.Entities;
 
 // moștenire: ContentStep este un LessonStep
-public sealed class ContentStep : LessonStep
+public class ContentStep : LessonStep
 {
     public override string Type => "content";
     public string Content { get; private set; }
@@ -11,5 +11,13 @@ public sealed class ContentStep : LessonStep
             throw new ArgumentException("Content nu poate fi gol.", nameof(content));
 
         Content = content.Trim();
+    }
+    
+    public override LessonStep Clone()
+    {
+        return new ContentStep(
+            Guid.NewGuid(),
+            Order,
+            Content);
     }
 }
