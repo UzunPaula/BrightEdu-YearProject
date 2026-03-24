@@ -1,5 +1,7 @@
 using BrightEdu.Application.DesignPatterns.AbstractFactory.Steps;
+using BrightEdu.Application.DesignPatterns.Adapter.Steps;
 using BrightEdu.Application.DesignPatterns.Builder;
+using BrightEdu.Application.DesignPatterns.Facade.Steps;
 using BrightEdu.Application.DesignPatterns.FactoryMethod.Steps;
 using BrightEdu.Application.DesignPatterns.Singleton;
 using BrightEdu.Application.Features.Courses;
@@ -8,7 +10,10 @@ using BrightEdu.Application.Features.Lessons.Mapper;
 using BrightEdu.Application.Interfaces;
 using BrightEdu.Domain.Entities;
 using BrightEdu.Infrastructure.DesignPatterns.AbstractFactory.Steps;
+using BrightEdu.Infrastructure.DesignPatterns.Adapter.Steps;
 using BrightEdu.Infrastructure.DesignPatterns.Builder;
+using BrightEdu.Infrastructure.DesignPatterns.Composite.Steps;
+using BrightEdu.Infrastructure.DesignPatterns.Facade.Steps;
 using BrightEdu.Infrastructure.DesignPatterns.FactoryMethod.Steps;
 using BrightEdu.Infrastructure.DesignPatterns.Singleton;
 using BrightEdu.Infrastructure.Repositories;
@@ -56,17 +61,30 @@ builder.Services.AddScoped<ILessonStepAbstractFactoryResolver, LessonStepAbstrac
 
 // Leagă interfața de implementare și creează o instanță nouă pe fiecare request.
 //builder.Services.AddScoped<ICreateLessonService, CreateLessonService>();
-
 builder.Services.AddScoped<ICreateLessonWithFactoryMethodService, CreateLessonWithFactoryMethodService>();
 builder.Services.AddScoped<ICreateLessonWithAbstractFactoryService, CreateLessonWithAbstractFactoryService>();
 builder.Services.AddScoped<ICreateLessonWithBuilderService, CreateLessonWithBuilderService>();
 builder.Services.AddScoped<ICreateLessonWithPrototypeService, CreateLessonWithPrototypeService>();
 
+// Builder și Director pentru construirea controlată a lecției.
 builder.Services.AddScoped<ILessonBuilder, LessonBuilder>();
 builder.Services.AddScoped<ILessonDirector, LessonDirector>();
 
+// Builder și Director pentru construirea controlată a lecției.
 builder.Services.AddSingleton<ILessonTemplateRegistry, LessonTemplateRegistry>();
 builder.Services.AddScoped<ICreateLessonFromTemplateService, CreateLessonFromTemplateService>();
+
+// Singleton pentru gestionarea template-urilor de lecții.
+builder.Services.AddScoped<ILessonCreationAdapter, CreateLessonRequestAdapter>();
+builder.Services.AddScoped<ICreateLessonWithAdapterService, CreateLessonWithAdapterService>();
+builder.Services.AddScoped<ITemplateLessonAdapter, TemplateLessonAdapter>();
+builder.Services.AddScoped<IGetTemplateAsCreationModelService, GetTemplateAsCreationModelService>();
+
+// Servicii pentru patternul Adapter.
+builder.Services.AddScoped<IBuildLessonCompositeService, BuildLessonCompositeService>();
+
+// Serviciu pentru construirea structurii ierarhice cu Composite.
+builder.Services.AddScoped<ILessonFacade, LessonFacade>();
 
 var app = builder.Build();
 

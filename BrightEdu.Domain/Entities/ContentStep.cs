@@ -16,8 +16,8 @@ public class ContentStep : LessonStep
     public override LessonStep Clone()
     {
         return new ContentStep(
-            Guid.NewGuid(),
+            Guid.NewGuid(), // ID NOU (nu același cu originalul)
             Order,
-            Content);
+            Content); // Același conținut, dar în obiect NOU
     }
 }

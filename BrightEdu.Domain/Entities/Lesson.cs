@@ -46,7 +46,7 @@ public class Lesson : IPrototype<Lesson>
 
         foreach (var step in _steps.OrderBy(s => s.Order))
         {
-            clonedLesson.AddStep(step.Clone());
+            clonedLesson.AddStep(step.Clone()); // Aici fac deep copy
         }
 
         return clonedLesson;

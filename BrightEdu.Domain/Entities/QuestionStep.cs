@@ -29,10 +29,10 @@ public class QuestionStep : LessonStep
     public override LessonStep Clone()
     {
         return new QuestionStep(
-            Guid.NewGuid(), // ID nou pentru copie
+            Guid.NewGuid(), // ID NOU (nu același cu originalul)
             Order, // Păstrează aceeași ordine
             QuestionText,
-            Options.ToList(),
+            Options.ToList(), // Listă NOUĂ (copie, nu aceeași referință)
             CorrectOptionIndex);
     }
 }

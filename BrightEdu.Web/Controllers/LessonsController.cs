@@ -1,3 +1,4 @@
+using BrightEdu.Application.DesignPatterns.Facade.Steps;
 using BrightEdu.Application.DTOs;
 using BrightEdu.Application.Features.Lessons;
 using BrightEdu.Application.Interfaces;
@@ -17,6 +18,10 @@ public class LessonsController : ControllerBase
     private readonly ICreateLessonWithBuilderService _createWithBuilder;
     private readonly ICreateLessonWithPrototypeService _createWithPrototype;
     private readonly ICreateLessonFromTemplateService _createFromTemplate;
+    private readonly ICreateLessonWithAdapterService _createLessonWithAdapterService;
+    private readonly IGetTemplateAsCreationModelService _getTemplateAsCreationModelService;
+    private readonly IBuildLessonCompositeService _buildLessonCompositeService;
+    private readonly ILessonFacade _lessonFacade;
 
     public LessonsController(
         IGetLessonService getService,
@@ -24,7 +29,11 @@ public class LessonsController : ControllerBase
         ICreateLessonWithAbstractFactoryService createWithAbstractFactory,
         ICreateLessonWithBuilderService createWithBuilder,
         ICreateLessonWithPrototypeService createWithPrototype,
-        ICreateLessonFromTemplateService createFromTemplate)
+        ICreateLessonFromTemplateService createFromTemplate,
+        ICreateLessonWithAdapterService createLessonWithAdapterService,
+        IGetTemplateAsCreationModelService getTemplateAsCreationModelService,
+        IBuildLessonCompositeService buildLessonCompositeService,
+        ILessonFacade lessonFacade)
     {
         _getService = getService;
         _createWithFactoryMethod = createWithFactoryMethod;
@@ -32,6 +41,10 @@ public class LessonsController : ControllerBase
         _createWithBuilder = createWithBuilder;
         _createWithPrototype = createWithPrototype;
         _createFromTemplate = createFromTemplate;
+        _createLessonWithAdapterService = createLessonWithAdapterService;
+        _getTemplateAsCreationModelService = getTemplateAsCreationModelService;
+        _buildLessonCompositeService = buildLessonCompositeService;
+        _lessonFacade = lessonFacade;
     }
 
     // Endpoint de test - returnează o lecție cu ID fix
@@ -113,5 +126,43 @@ public class LessonsController : ControllerBase
         if (created is null) return Problem("Lesson was not saved.");
 
         return Ok(created);
+    }
+    
+    // Endpoint care folosește Adapter
+    [HttpPost("adapter")]
+    public async Task<ActionResult<LessonDto>> CreateWithAdapter([FromBody] CreateLessonRequestDto request)
+    {
+        var lesson = await _createLessonWithAdapterService.CreateAsync(request);
+        return Ok(lesson);
+    }
+    [HttpGet("adapter/template/{templateId:guid}")]
+    public ActionResult<LessonCreationModel> GetTemplateAsCreationModel(Guid templateId)
+    {
+        var result = _getTemplateAsCreationModelService.GetById(templateId);
+        return Ok(result);
+    }
+    
+    // Endpoint care folosește Composite
+    [HttpGet("composite")]
+    public ActionResult<string> GetCompositeLessonStructure()
+    {
+        var result = _buildLessonCompositeService.BuildSampleLessonStructure();
+        return Ok(result);
+    }
+    
+    // Endpoint care folosește Facade pentru a crea o lecție din request.
+    [HttpPost("facade")]
+    public async Task<ActionResult<LessonDto>> CreateWithFacade([FromBody] CreateLessonRequestDto request)
+    {
+        var lesson = await _lessonFacade.CreateLessonFromRequestAsync(request);
+        return Ok(lesson);
+    }
+
+// Endpoint care folosește Facade pentru a obține modelul comun din template.
+    [HttpGet("facade/template/{templateId:guid}")]
+    public ActionResult<LessonCreationModel> GetTemplateWithFacade(Guid templateId)
+    {
+        var result = _lessonFacade.GetLessonCreationModelFromTemplate(templateId);
+        return Ok(result);
     }
 }
