@@ -16,9 +16,11 @@ public sealed class InMemoryCourseRepository : ICourseReadRepository, ICourseWri
 
     public Task<IReadOnlyList<Course>> GetAllAsync(CancellationToken ct = default)
     {
-        return Task.FromResult((IReadOnlyList<Course>)Courses);
+        IReadOnlyList<Course> result = Courses.ToList().AsReadOnly();
+        return Task.FromResult(result);
     }
 
+    // Adaugă un curs nou în lista in-memory.
     public Task AddAsync(Course course, CancellationToken ct = default)
     {
         Courses.Add(course);

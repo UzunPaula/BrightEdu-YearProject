@@ -1,54 +1,70 @@
-using BrightEdu.Domain.Prototype;
-
 namespace BrightEdu.Domain.Entities;
 
-// Entitatea principală care reprezintă o lecție în sistem.
-// Implementează IPrototype pentru a permite duplicarea lecțiilor.
-public class Lesson : IPrototype<Lesson>
+public class Lesson
 {
     public Guid Id { get; private set; }
     public string Title { get; private set; }
+    public string Content { get; private set; }
 
-    private readonly List<LessonStep> _steps = new();
-    public IReadOnlyList<LessonStep> Steps => _steps.AsReadOnly();  // Listă privată pentru a controla modul de adăugare
+    // Ordinea lecției în cadrul cursului.
+    public int Order { get; private set; }
 
-    // Constructor cu validări pentru a preveni stări invalide.
-    public Lesson(Guid id, string title)
+    // Cheie străină către cursul din care face parte lecția.
+    public Guid CourseId { get; private set; }
+
+    // Proprietate de navigare către curs.
+    public Course Course { get; private set; } = null!;
+
+    // O lecție poate avea un quiz sau poate să nu aibă deloc.
+    public Quiz? Quiz { get; private set; }
+
+    // Constructor privat necesar pentru EF Core.
+    private Lesson() { }
+
+    // Constructorul principal pentru crearea unei lecții valide.
+    public Lesson(Guid id, string title, string content, int order, Guid courseId)
     {
-        if (id == Guid.Empty) throw new ArgumentException("Id invalid.", nameof(id));
-        if (string.IsNullOrWhiteSpace(title))
-            throw new ArgumentException("Titlul nu poate fi gol.", nameof(title));
+        if (id == Guid.Empty)
+            throw new ArgumentException("Id invalid.", nameof(id));
+
+        if (courseId == Guid.Empty)
+            throw new ArgumentException("CourseId invalid.", nameof(courseId));
+
+        if (order <= 0)
+            throw new ArgumentException("Order trebuie să fie mai mare ca 0.", nameof(order));
 
         Id = id;
+        CourseId = courseId;
+        Order = order;
+
+        SetTitle(title);
+        SetContent(content);
+    }
+
+    // Setează titlul lecției cu validare.
+    public void SetTitle(string title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Titlul lecției nu poate fi gol.", nameof(title));
+
         Title = title.Trim();
     }
-    
-    // Adaugă un pas în lecție și menține ordinea sortată.
-    public void AddStep(LessonStep step)
+
+    // Setează conținutul lecției cu validare.
+    public void SetContent(string content)
     {
-        if (step is null) throw new ArgumentNullException(nameof(step));
+        if (string.IsNullOrWhiteSpace(content))
+            throw new ArgumentException("Conținutul lecției nu poate fi gol.", nameof(content));
 
-        // Prevenim duplicate după Order
-        if (_steps.Any(s => s.Order == step.Order))
-            throw new InvalidOperationException("Există deja un step cu acest Order.");
-
-        _steps.Add(step);
-        _steps.Sort((a, b) => a.Order.CompareTo(b.Order));
+        Content = content.Trim();
     }
-    
-    // Implementare Prototype - creează o copie a lecției.
-    public Lesson Clone()
+
+    // Permite schimbarea ordinii lecției.
+    public void SetOrder(int order)
     {
-        // Generăm ID nou pentru copie
-        var clonedLesson = new Lesson(
-            Guid.NewGuid(),
-            $"{Title} Copy"); // SuFix pentru identificare ușoară
+        if (order <= 0)
+            throw new ArgumentException("Order trebuie să fie mai mare ca 0.", nameof(order));
 
-        foreach (var step in _steps.OrderBy(s => s.Order))
-        {
-            clonedLesson.AddStep(step.Clone()); // Aici fac deep copy
-        }
-
-        return clonedLesson;
+        Order = order;
     }
 }

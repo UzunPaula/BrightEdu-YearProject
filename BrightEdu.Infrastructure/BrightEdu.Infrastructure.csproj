@@ -12,8 +12,28 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="DataAccess\" />
       <Folder Include="Services\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="DesignPatterns\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="DesignPatterns\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="DesignPatterns\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.25" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.25" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.25">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
     </ItemGroup>
 
 </Project>

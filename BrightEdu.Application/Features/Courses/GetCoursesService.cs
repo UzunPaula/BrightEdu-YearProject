@@ -8,11 +8,12 @@ public interface IGetCoursesService
     Task<IReadOnlyList<CourseDto>> GetAllAsync(CancellationToken ct = default);
 }
 
-// SRP: service-ul conține logica de use case și maparea în DTO.
-// DIP: depinde de ICourseReadRepository, nu de repository concret.
+// Serviciu care citește cursurile din repository și le transformă în DTO-uri.
+// Respectă SRP, fiindcă se ocupă doar de use case-ul de citire a cursurilor.
 public sealed class GetCoursesService : IGetCoursesService
 {
-    private readonly ICourseReadRepository _courseReadRepository; // ISP: doar citire
+    // Repository doar pentru citire, conform ISP.
+    private readonly ICourseReadRepository _courseReadRepository; 
 
     public GetCoursesService(ICourseReadRepository courseReadRepository)
     {
@@ -21,9 +22,15 @@ public sealed class GetCoursesService : IGetCoursesService
 
     public async Task<IReadOnlyList<CourseDto>> GetAllAsync(CancellationToken ct = default)
     {
+        // Citim entitățile din repository.
         var courses = await _courseReadRepository.GetAllAsync(ct);
 
-        // SRP: aici transform entități Domain în DTO pentru API.
-        return courses.Select(c => new CourseDto(c.Id, c.Title, c.Description)).ToList();
+        // Mapăm entitățile Domain în DTO-uri pentru a nu expune direct modelul intern.
+        IReadOnlyList<CourseDto> result = courses
+            .Select(c => new CourseDto(c.Id, c.Title, c.Description))
+            .ToList()
+            .AsReadOnly();
+
+        return result;
     }
 }
