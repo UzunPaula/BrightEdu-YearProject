@@ -1,3 +1,4 @@
+using BrightEdu.Application.DesignPatterns.Command;
 using BrightEdu.Application.DTOs;
 using BrightEdu.Application.Interfaces;
 using BrightEdu.Domain.Entities;
@@ -13,6 +14,8 @@ public interface IAdminCourseService
     Task<AdminCourseDto?> UpdateAsync(Guid id, UpdateCourseRequest request, CancellationToken ct = default);
     Task<bool> PublishAsync(Guid id, CancellationToken ct = default);
     Task<bool> ArchiveAsync(Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<EntityTranslationDto>> GetTranslationsAsync(Guid id, CancellationToken ct = default);
+    Task<bool> UpsertTranslationAsync(Guid id, string lang, UpsertCourseTranslationRequest request, CancellationToken ct = default);
 }
 
 public sealed class AdminCourseService : IAdminCourseService
@@ -70,8 +73,9 @@ public sealed class AdminCourseService : IAdminCourseService
         var course = await _repository.GetByIdAsync(id, ct);
         if (course is null) return false;
 
-        course.SetState(CourseState.Published);
-        await _repository.SaveAsync(ct);
+        // Command + State — validează tranziția și execută comanda
+        var invoker = new CourseCommandInvoker();
+        await invoker.ExecuteAsync(new PublishCourseCommand(course, _repository), ct);
         return true;
     }
 
@@ -80,10 +84,38 @@ public sealed class AdminCourseService : IAdminCourseService
         var course = await _repository.GetByIdAsync(id, ct);
         if (course is null) return false;
 
-        course.SetState(CourseState.Archived);
-        await _repository.SaveAsync(ct);
+        // Command + State — validează tranziția și execută comanda
+        var invoker = new CourseCommandInvoker();
+        await invoker.ExecuteAsync(new ArchiveCourseCommand(course, _repository), ct);
         return true;
     }
+
+    public async Task<IReadOnlyList<EntityTranslationDto>> GetTranslationsAsync(Guid id, CancellationToken ct = default)
+    {
+        var course = await _repository.GetByIdAsync(id, ct);
+        if (course is null) return Array.Empty<EntityTranslationDto>();
+
+        return course.Translations
+            .Select(t => new EntityTranslationDto(t.LanguageCode.ToString().ToLower(), t.Title, t.ShortDescription, t.FullDescription))
+            .ToList().AsReadOnly();
+    }
+
+    public async Task<bool> UpsertTranslationAsync(Guid id, string lang, UpsertCourseTranslationRequest request, CancellationToken ct = default)
+    {
+        var exists = await _repository.GetByIdAsync(id, ct);
+        if (exists is null) return false;
+
+        await _repository.UpsertTranslationAsync(id, ParseLanguage(lang), request.Title, request.ShortDescription, request.FullDescription, ct);
+        return true;
+    }
+
+    private static LanguageCode ParseLanguage(string lang) => lang.ToLowerInvariant() switch
+    {
+        "ro" => LanguageCode.Ro,
+        "en" => LanguageCode.En,
+        "ru" => LanguageCode.Ru,
+        _ => throw new ArgumentException($"Limbă necunoscută: {lang}")
+    };
 
     private static AdminCourseDto Map(Course course)
     {

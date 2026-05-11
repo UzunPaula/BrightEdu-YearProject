@@ -31,6 +31,7 @@ import type {
   AdminAttachment,
   SetContentBlocksPayload,
   AddAttachmentPayload,
+  AddAttachmentLinkPayload,
   EntityTranslation,
   UpsertCourseTranslationPayload,
   UpsertModuleTranslationPayload,
@@ -138,6 +139,10 @@ export const brightEduApi = {
 
   // ─── Admin: Courses ────────────────────────────────────────────────────────
 
+  adminImportCourse(payload: import("../types/api").CourseImportPayload, token: string) {
+    return apiRequest<import("../types/api").CourseImportResult>("/api/admin/courses/import", { method: "POST", token, body: payload });
+  },
+
   adminGetCourses(token: string) {
     return apiRequest<AdminCourse[]>("/api/admin/courses", { token });
   },
@@ -206,12 +211,16 @@ export const brightEduApi = {
     return apiRequest<AdminLessonFull>(`/api/admin/lessons/${encodeURIComponent(id)}/full`, { token });
   },
 
-  adminSetContentBlocks(id: string, payload: SetContentBlocksPayload, token: string) {
-    return apiRequest<AdminLessonFull>(`/api/admin/lessons/${encodeURIComponent(id)}/content-blocks`, { method: "PUT", token, body: payload });
+  adminSetContentBlocks(id: string, lang: string, payload: SetContentBlocksPayload, token: string) {
+    return apiRequest<AdminLessonFull>(`/api/admin/lessons/${encodeURIComponent(id)}/content-blocks/${lang}`, { method: "PUT", token, body: payload });
   },
 
   adminAddAttachment(id: string, payload: AddAttachmentPayload, token: string) {
     return apiRequest<AdminAttachment>(`/api/admin/lessons/${encodeURIComponent(id)}/attachments`, { method: "POST", token, body: payload });
+  },
+
+  adminAddAttachmentLink(id: string, payload: AddAttachmentLinkPayload, token: string) {
+    return apiRequest<AdminAttachment>(`/api/admin/lessons/${encodeURIComponent(id)}/attachments/link`, { method: "POST", token, body: payload });
   },
 
   adminRemoveAttachment(lessonId: string, attachmentId: string, token: string) {

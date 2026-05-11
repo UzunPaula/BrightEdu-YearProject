@@ -1,3 +1,4 @@
+using BrightEdu.Application.DesignPatterns.ChainOfResponsibility;
 using BrightEdu.Application.DTOs;
 using BrightEdu.Application.Interfaces;
 
@@ -28,10 +29,23 @@ public sealed class StartQuizAttemptService : IStartQuizAttemptService
             throw new InvalidOperationException("Quiz inexistent.");
 
         var existingAttempts = await _quizAttemptRepository.CountForStudentAsync(quizId, studentId, ct);
-        var hasUnlimitedAttempts = quiz.MaxAttempts == 0;
 
-        if (!hasUnlimitedAttempts && existingAttempts >= quiz.MaxAttempts)
-            throw new InvalidOperationException("Ai atins numarul maxim de incercari permis.");
+        // Chain of Responsibility — validare secvențială înainte de a porni quiz-ul
+        var activeCheck = new QuizActiveHandler();
+        var questionsCheck = new QuizHasQuestionsHandler();
+        var attemptsCheck = new AttemptsRemainingHandler();
+        activeCheck.SetNext(questionsCheck).SetNext(attemptsCheck);
+
+        var context = new QuizAttemptStartContext
+        {
+            Quiz = quiz,
+            StudentId = studentId,
+            ExistingAttemptsCount = existingAttempts
+        };
+
+        var validationError = await activeCheck.HandleAsync(context, ct);
+        if (validationError is not null)
+            throw new InvalidOperationException(validationError);
 
         var attempt = new Domain.Entities.QuizAttempt(Guid.NewGuid(), quizId, studentId, existingAttempts + 1);
         await _quizAttemptRepository.AddAsync(attempt, ct);

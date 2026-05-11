@@ -1,3 +1,5 @@
+using BrightEdu.Application.DesignPatterns.Observer;
+using BrightEdu.Application.DesignPatterns.Strategy;
 using BrightEdu.Application.DTOs;
 using BrightEdu.Application.Interfaces;
 using BrightEdu.Domain.Entities;
@@ -13,13 +15,19 @@ public sealed class SubmitQuizAttemptService : ISubmitQuizAttemptService
 {
     private readonly IQuizAttemptRepository _quizAttemptRepository;
     private readonly IQuizRepository _quizRepository;
+    private readonly QuizScoringContext _scoringContext;
+    private readonly IEnumerable<IQuizResultObserver> _observers;
 
     public SubmitQuizAttemptService(
         IQuizAttemptRepository quizAttemptRepository,
-        IQuizRepository quizRepository)
+        IQuizRepository quizRepository,
+        QuizScoringContext scoringContext,
+        IEnumerable<IQuizResultObserver> observers)
     {
         _quizAttemptRepository = quizAttemptRepository;
         _quizRepository = quizRepository;
+        _scoringContext = scoringContext;
+        _observers = observers;
     }
 
     public async Task<SubmitQuizAttemptResultDto> SubmitAsync(Guid studentId, SubmitQuizAttemptRequestDto request, CancellationToken ct = default)
@@ -36,26 +44,8 @@ public sealed class SubmitQuizAttemptService : ISubmitQuizAttemptService
             .Select(a => new QuizAttemptAnswer(Guid.NewGuid(), attempt.Id, a.QuestionId, a.SelectedOptionId, a.TextAnswer))
             .ToList();
 
-        var totalQuestions = quiz.Questions.Count;
-        var correctAnswers = 0;
-
-        foreach (var question in quiz.Questions)
-        {
-            var selectedOptionIds = submittedAnswers
-                .Where(x => x.QuestionId == question.Id && x.SelectedOptionId.HasValue)
-                .Select(x => x.SelectedOptionId!.Value)
-                .ToHashSet();
-
-            var correctOptionIds = question.Answers
-                .Where(x => x.IsCorrect)
-                .Select(x => x.Id)
-                .ToHashSet();
-
-            if (selectedOptionIds.SetEquals(correctOptionIds))
-                correctAnswers++;
-        }
-
-        var score = totalQuestions == 0 ? 0m : Math.Round((decimal)correctAnswers / totalQuestions * 100m, 2);
+        // Strategy — calculul scorului delegat strategiei configurate
+        var score = _scoringContext.Calculate(quiz.Questions, submittedAnswers);
         var passed = score >= quiz.PassingScore;
 
         foreach (var answer in submittedAnswers)
@@ -64,12 +54,16 @@ public sealed class SubmitQuizAttemptService : ISubmitQuizAttemptService
         attempt.Submit(score, passed);
         await _quizAttemptRepository.SaveChangesAsync(ct);
 
+        // Observer — notifică toți observatorii despre rezultatul quiz-ului
+        foreach (var observer in _observers)
+            await observer.OnQuizSubmittedAsync(studentId, quiz.LessonId, passed, ct);
+
         return new SubmitQuizAttemptResultDto(
             attempt.Id,
             score,
             passed,
-            correctAnswers,
-            totalQuestions,
+            submittedAnswers.Count,
+            quiz.Questions.Count,
             passed
                 ? "Quiz trimis cu succes. Ai trecut."
                 : "Quiz trimis. Nu ai atins încă pragul minim.");

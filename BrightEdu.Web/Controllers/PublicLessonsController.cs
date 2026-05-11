@@ -18,9 +18,9 @@ public class PublicLessonsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<LessonDetailsDto>> GetById(Guid id, CancellationToken ct)
+    public async Task<ActionResult<LessonDetailsDto>> GetById(Guid id, [FromQuery] string lang = "ro", CancellationToken ct = default)
     {
-        var result = await _publicLessonService.GetByIdAsync(id, ct);
+        var result = await _publicLessonService.GetByIdAsync(id, lang, ct);
         return result is null ? NotFound() : Ok(result);
     }
 }

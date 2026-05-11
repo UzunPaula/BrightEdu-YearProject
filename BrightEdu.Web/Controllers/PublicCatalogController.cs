@@ -18,15 +18,15 @@ public class PublicCatalogController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<CourseCardDto>>> GetCourses(CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<CourseCardDto>>> GetCourses([FromQuery] string lang = "ro", CancellationToken ct = default)
     {
-        return Ok(await _courseCatalogService.GetCoursesAsync(ct));
+        return Ok(await _courseCatalogService.GetCoursesAsync(lang, ct));
     }
 
     [HttpGet("{slug}")]
-    public async Task<ActionResult<CourseDetailsDto>> GetCourseBySlug(string slug, CancellationToken ct)
+    public async Task<ActionResult<CourseDetailsDto>> GetCourseBySlug(string slug, [FromQuery] string lang = "ro", CancellationToken ct = default)
     {
-        var result = await _courseCatalogService.GetBySlugAsync(slug, ct);
+        var result = await _courseCatalogService.GetBySlugAsync(slug, lang, ct);
         return result is null ? NotFound() : Ok(result);
     }
 }

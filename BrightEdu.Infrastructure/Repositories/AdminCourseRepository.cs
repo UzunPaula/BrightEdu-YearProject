@@ -1,5 +1,6 @@
 using BrightEdu.Application.Interfaces;
 using BrightEdu.Domain.Entities;
+using BrightEdu.Domain.Enums;
 using BrightEdu.Infrastructure.DataAccess;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,5 +51,18 @@ public sealed class AdminCourseRepository : IAdminCourseRepository
     {
         return await _dbContext.Courses
             .AnyAsync(x => x.Slug == slug && (excludeId == null || x.Id != excludeId.Value), ct);
+    }
+
+    public async Task UpsertTranslationAsync(Guid courseId, LanguageCode lang, string title, string? shortDescription, string? fullDescription, CancellationToken ct = default)
+    {
+        var existing = await _dbContext.CourseTranslations
+            .FirstOrDefaultAsync(t => t.CourseId == courseId && t.LanguageCode == lang, ct);
+
+        if (existing is null)
+            _dbContext.CourseTranslations.Add(new CourseTranslation(Guid.NewGuid(), courseId, lang, title, shortDescription, fullDescription));
+        else
+            existing.Update(title, shortDescription, fullDescription);
+
+        await _dbContext.SaveChangesAsync(ct);
     }
 }

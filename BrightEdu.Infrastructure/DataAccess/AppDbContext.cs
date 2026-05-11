@@ -131,13 +131,16 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(x => x.Id);
             entity.Property(x => x.ConfigJson).IsRequired().HasMaxLength(8000);
+            entity.Property(x => x.Lang).IsRequired().HasMaxLength(10).HasDefaultValue("ro");
         });
 
         modelBuilder.Entity<LessonAttachment>(entity =>
         {
             entity.HasKey(x => x.Id);
             entity.Property(x => x.DisplayName).IsRequired().HasMaxLength(200);
-            entity.HasOne(x => x.MediaAsset).WithMany().HasForeignKey(x => x.MediaAssetId);
+            entity.Property(x => x.MediaAssetId).IsRequired(false);
+            entity.Property(x => x.ExternalUrl).IsRequired(false).HasMaxLength(1000);
+            entity.HasOne(x => x.MediaAsset).WithMany().HasForeignKey(x => x.MediaAssetId).IsRequired(false);
         });
 
         modelBuilder.Entity<Quiz>(entity =>

@@ -12,6 +12,8 @@ public interface IAdminModuleService
     Task<AdminModuleDto> CreateAsync(CreateModuleRequest request, CancellationToken ct = default);
     Task<AdminModuleDto?> UpdateAsync(Guid id, UpdateModuleRequest request, CancellationToken ct = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<EntityTranslationDto>> GetTranslationsAsync(Guid id, CancellationToken ct = default);
+    Task<bool> UpsertTranslationAsync(Guid id, string lang, UpsertModuleTranslationRequest request, CancellationToken ct = default);
 }
 
 public sealed class AdminModuleService : IAdminModuleService
@@ -71,6 +73,33 @@ public sealed class AdminModuleService : IAdminModuleService
         await _repository.SaveAsync(ct);
         return true;
     }
+
+    public async Task<IReadOnlyList<EntityTranslationDto>> GetTranslationsAsync(Guid id, CancellationToken ct = default)
+    {
+        var module = await _repository.GetByIdAsync(id, ct);
+        if (module is null) return Array.Empty<EntityTranslationDto>();
+
+        return module.Translations
+            .Select(t => new EntityTranslationDto(t.LanguageCode.ToString().ToLower(), t.Title, t.Description, null))
+            .ToList().AsReadOnly();
+    }
+
+    public async Task<bool> UpsertTranslationAsync(Guid id, string lang, UpsertModuleTranslationRequest request, CancellationToken ct = default)
+    {
+        var exists = await _repository.GetByIdAsync(id, ct);
+        if (exists is null) return false;
+
+        await _repository.UpsertTranslationAsync(id, ParseLanguage(lang), request.Title, request.Description, ct);
+        return true;
+    }
+
+    private static LanguageCode ParseLanguage(string lang) => lang.ToLowerInvariant() switch
+    {
+        "ro" => LanguageCode.Ro,
+        "en" => LanguageCode.En,
+        "ru" => LanguageCode.Ru,
+        _ => throw new ArgumentException($"Limbă necunoscută: {lang}")
+    };
 
     private static AdminModuleDto Map(Module module)
     {

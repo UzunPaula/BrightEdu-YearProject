@@ -1,5 +1,6 @@
 using BrightEdu.Application.Interfaces;
 using BrightEdu.Domain.Entities;
+using BrightEdu.Domain.Enums;
 using BrightEdu.Infrastructure.DataAccess;
 using Microsoft.EntityFrameworkCore;
 
@@ -61,12 +62,12 @@ public sealed class AdminLessonRepository : IAdminLessonRepository
         await _dbContext.SaveChangesAsync(ct);
     }
 
-    public async Task DeleteContentBlocksAsync(Guid lessonId, CancellationToken ct = default)
+    public async Task DeleteContentBlocksAsync(Guid lessonId, string? lang = null, CancellationToken ct = default)
     {
-        var blocks = await _dbContext.Set<LessonContentBlock>()
-            .Where(b => b.LessonId == lessonId)
-            .ToListAsync(ct);
-        _dbContext.Set<LessonContentBlock>().RemoveRange(blocks);
+        var query = _dbContext.Set<LessonContentBlock>().Where(b => b.LessonId == lessonId);
+        if (lang is not null)
+            query = query.Where(b => b.Lang == lang.ToLowerInvariant());
+        _dbContext.Set<LessonContentBlock>().RemoveRange(await query.ToListAsync(ct));
     }
 
     public void AddContentBlock(LessonContentBlock block)
@@ -85,5 +86,18 @@ public sealed class AdminLessonRepository : IAdminLessonRepository
             .FirstOrDefaultAsync(a => a.Id == attachmentId, ct);
         if (attachment is not null)
             _dbContext.Set<LessonAttachment>().Remove(attachment);
+    }
+
+    public async Task UpsertTranslationAsync(Guid lessonId, LanguageCode lang, string title, string summary, CancellationToken ct = default)
+    {
+        var existing = await _dbContext.LessonTranslations
+            .FirstOrDefaultAsync(t => t.LessonId == lessonId && t.LanguageCode == lang, ct);
+
+        if (existing is null)
+            _dbContext.LessonTranslations.Add(new LessonTranslation(Guid.NewGuid(), lessonId, lang, title, summary));
+        else
+            existing.Update(title, summary);
+
+        await _dbContext.SaveChangesAsync(ct);
     }
 }

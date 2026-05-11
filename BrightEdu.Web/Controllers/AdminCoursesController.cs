@@ -11,10 +11,26 @@ namespace BrightEdu.Web.Controllers;
 public class AdminCoursesController : ControllerBase
 {
     private readonly IAdminCourseService _service;
+    private readonly IAdminCourseImportService _importService;
 
-    public AdminCoursesController(IAdminCourseService service)
+    public AdminCoursesController(IAdminCourseService service, IAdminCourseImportService importService)
     {
         _service = service;
+        _importService = importService;
+    }
+
+    [HttpPost("import")]
+    public async Task<ActionResult<CourseImportResultDto>> Import(CourseImportDto dto, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _importService.ImportAsync(dto, ct);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpGet]
@@ -61,5 +77,23 @@ public class AdminCoursesController : ControllerBase
     {
         var success = await _service.ArchiveAsync(id, ct);
         return success ? NoContent() : NotFound();
+    }
+
+    [HttpGet("{id:guid}/translations")]
+    public async Task<ActionResult<IReadOnlyList<EntityTranslationDto>>> GetTranslations(Guid id, CancellationToken ct)
+        => Ok(await _service.GetTranslationsAsync(id, ct));
+
+    [HttpPut("{id:guid}/translations/{lang}")]
+    public async Task<IActionResult> UpsertTranslation(Guid id, string lang, UpsertCourseTranslationRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var success = await _service.UpsertTranslationAsync(id, lang, request, ct);
+            return success ? NoContent() : NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

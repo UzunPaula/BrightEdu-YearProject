@@ -1,4 +1,5 @@
 using BrightEdu.Domain.Entities;
+using BrightEdu.Domain.Enums;
 
 namespace BrightEdu.Application.Interfaces;
 
@@ -10,8 +11,9 @@ public interface IAdminLessonRepository
     Task AddAsync(Lesson lesson, CancellationToken ct = default);
     Task RemoveAsync(Lesson lesson, CancellationToken ct = default);
     Task SaveAsync(CancellationToken ct = default);
-    Task DeleteContentBlocksAsync(Guid lessonId, CancellationToken ct = default);
+    Task DeleteContentBlocksAsync(Guid lessonId, string? lang = null, CancellationToken ct = default);
     void AddContentBlock(LessonContentBlock block);
     void AddAttachment(LessonAttachment attachment);
     Task DeleteAttachmentAsync(Guid attachmentId, CancellationToken ct = default);
+    Task UpsertTranslationAsync(Guid lessonId, LanguageCode lang, string title, string summary, CancellationToken ct = default);
 }

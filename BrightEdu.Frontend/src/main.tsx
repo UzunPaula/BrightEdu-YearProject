@@ -6,15 +6,18 @@ import "./shared/i18n";
 import "./app/styles.css";
 import { AuthProvider } from "./features/auth/AuthContext";
 import { ToastProvider } from "./shared/components/Toast";
+import { ThemeProvider } from "./features/theme/ThemeContext";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AuthProvider>
-      <BrowserRouter>
-        <ToastProvider>
-          <App />
-        </ToastProvider>
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );

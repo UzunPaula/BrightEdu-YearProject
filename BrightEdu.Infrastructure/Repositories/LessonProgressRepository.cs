@@ -34,9 +34,22 @@ public sealed class LessonProgressRepository : ILessonProgressRepository
 
     public async Task AddAsync(LessonProgress progress, CancellationToken ct = default)
     {
-        await _dbContext.LessonProgresses.AddAsync(progress, ct);
-        await _dbContext.SaveChangesAsync(ct);
+        try
+        {
+            await _dbContext.LessonProgresses.AddAsync(progress, ct);
+            await _dbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (IsDuplicateKey(ex))
+        {
+            // Race condition: two concurrent requests tried to create progress for the same lesson.
+            // Clear the failed entity from the tracker so subsequent GetAsync works correctly.
+            _dbContext.ChangeTracker.Clear();
+        }
     }
+
+    private static bool IsDuplicateKey(DbUpdateException ex)
+        => ex.InnerException?.Message.Contains("duplicate key") == true
+        || ex.InnerException?.Message.Contains("IX_LessonProgresses") == true;
 
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _dbContext.SaveChangesAsync(ct);

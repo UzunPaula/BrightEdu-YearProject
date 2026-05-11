@@ -55,4 +55,22 @@ public class AdminModulesController : ControllerBase
         var success = await _service.DeleteAsync(id, ct);
         return success ? NoContent() : NotFound();
     }
+
+    [HttpGet("api/admin/modules/{id:guid}/translations")]
+    public async Task<ActionResult<IReadOnlyList<EntityTranslationDto>>> GetTranslations(Guid id, CancellationToken ct)
+        => Ok(await _service.GetTranslationsAsync(id, ct));
+
+    [HttpPut("api/admin/modules/{id:guid}/translations/{lang}")]
+    public async Task<IActionResult> UpsertTranslation(Guid id, string lang, UpsertModuleTranslationRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var success = await _service.UpsertTranslationAsync(id, lang, request, ct);
+            return success ? NoContent() : NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

@@ -14,9 +14,12 @@ public interface IAdminLessonService
     Task<AdminLessonDto?> UpdateAsync(Guid id, UpdateLessonRequest request, CancellationToken ct = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
     Task<bool> PublishAsync(Guid id, CancellationToken ct = default);
-    Task<AdminLessonFullDto?> SetContentBlocksAsync(Guid id, SetContentBlocksRequest request, CancellationToken ct = default);
+    Task<AdminLessonFullDto?> SetContentBlocksAsync(Guid id, string lang, SetContentBlocksRequest request, CancellationToken ct = default);
     Task<AdminAttachmentDto?> AddAttachmentAsync(Guid id, AddAttachmentRequest request, CancellationToken ct = default);
+    Task<AdminAttachmentDto?> AddAttachmentLinkAsync(Guid id, AddAttachmentLinkRequest request, CancellationToken ct = default);
     Task<bool> RemoveAttachmentAsync(Guid id, Guid attachmentId, CancellationToken ct = default);
+    Task<IReadOnlyList<EntityTranslationDto>> GetTranslationsAsync(Guid id, CancellationToken ct = default);
+    Task<bool> UpsertTranslationAsync(Guid id, string lang, UpsertLessonTranslationRequest request, CancellationToken ct = default);
 }
 
 public sealed class AdminLessonService : IAdminLessonService
@@ -110,19 +113,20 @@ public sealed class AdminLessonService : IAdminLessonService
         return lesson is null ? null : MapFull(lesson);
     }
 
-    public async Task<AdminLessonFullDto?> SetContentBlocksAsync(Guid id, SetContentBlocksRequest request, CancellationToken ct = default)
+    public async Task<AdminLessonFullDto?> SetContentBlocksAsync(Guid id, string lang, SetContentBlocksRequest request, CancellationToken ct = default)
     {
         var lesson = await _repository.GetFullAsync(id, ct);
         if (lesson is null) return null;
 
-        await _repository.DeleteContentBlocksAsync(id, ct);
+        var normalizedLang = lang.ToLowerInvariant();
+        await _repository.DeleteContentBlocksAsync(id, normalizedLang, ct);
 
         foreach (var b in request.Blocks)
         {
             if (!Enum.TryParse<ContentBlockType>(b.BlockType, ignoreCase: true, out var blockType))
                 throw new ArgumentException($"Tip bloc necunoscut: {b.BlockType}");
 
-            _repository.AddContentBlock(new LessonContentBlock(Guid.NewGuid(), id, b.Order, blockType, b.ConfigJson));
+            _repository.AddContentBlock(new LessonContentBlock(Guid.NewGuid(), id, b.Order, blockType, b.ConfigJson, normalizedLang));
         }
 
         await _repository.SaveAsync(ct);
@@ -138,7 +142,19 @@ public sealed class AdminLessonService : IAdminLessonService
         _repository.AddAttachment(attachment);
         await _repository.SaveAsync(ct);
 
-        return new AdminAttachmentDto(attachment.Id, attachment.MediaAssetId, attachment.DisplayName, string.Empty);
+        return new AdminAttachmentDto(attachment.Id, attachment.MediaAssetId, attachment.DisplayName, attachment.MediaAsset?.RelativePath ?? string.Empty);
+    }
+
+    public async Task<AdminAttachmentDto?> AddAttachmentLinkAsync(Guid id, AddAttachmentLinkRequest request, CancellationToken ct = default)
+    {
+        var lesson = await _repository.GetByIdAsync(id, ct);
+        if (lesson is null) return null;
+
+        var attachment = new LessonAttachment(Guid.NewGuid(), id, request.ExternalUrl, request.DisplayName);
+        _repository.AddAttachment(attachment);
+        await _repository.SaveAsync(ct);
+
+        return new AdminAttachmentDto(attachment.Id, null, attachment.DisplayName, request.ExternalUrl);
     }
 
     public async Task<bool> RemoveAttachmentAsync(Guid id, Guid attachmentId, CancellationToken ct = default)
@@ -150,6 +166,33 @@ public sealed class AdminLessonService : IAdminLessonService
         await _repository.SaveAsync(ct);
         return true;
     }
+
+    public async Task<IReadOnlyList<EntityTranslationDto>> GetTranslationsAsync(Guid id, CancellationToken ct = default)
+    {
+        var lesson = await _repository.GetByIdAsync(id, ct);
+        if (lesson is null) return Array.Empty<EntityTranslationDto>();
+
+        return lesson.Translations
+            .Select(t => new EntityTranslationDto(t.LanguageCode.ToString().ToLower(), t.Title, t.Summary, null))
+            .ToList().AsReadOnly();
+    }
+
+    public async Task<bool> UpsertTranslationAsync(Guid id, string lang, UpsertLessonTranslationRequest request, CancellationToken ct = default)
+    {
+        var exists = await _repository.GetByIdAsync(id, ct);
+        if (exists is null) return false;
+
+        await _repository.UpsertTranslationAsync(id, ParseLanguage(lang), request.Title, request.Summary, ct);
+        return true;
+    }
+
+    private static LanguageCode ParseLanguage(string lang) => lang.ToLowerInvariant() switch
+    {
+        "ro" => LanguageCode.Ro,
+        "en" => LanguageCode.En,
+        "ru" => LanguageCode.Ru,
+        _ => throw new ArgumentException($"Limbă necunoscută: {lang}")
+    };
 
     private static AdminLessonDto Map(Lesson lesson)
     {
@@ -172,11 +215,11 @@ public sealed class AdminLessonService : IAdminLessonService
         var translation = lesson.GetTranslation(LanguageCode.Ro) ?? lesson.Translations.FirstOrDefault();
         var blocks = lesson.ContentBlocks
             .OrderBy(b => b.Order)
-            .Select(b => new AdminContentBlockDto(b.Id, b.BlockType.ToString(), b.Order, b.ConfigJson))
+            .Select(b => new AdminContentBlockDto(b.Id, b.BlockType.ToString(), b.Order, b.ConfigJson, b.Lang))
             .ToList()
             .AsReadOnly();
         var attachments = lesson.Attachments
-            .Select(a => new AdminAttachmentDto(a.Id, a.MediaAssetId, a.DisplayName, a.MediaAsset?.RelativePath ?? string.Empty))
+            .Select(a => new AdminAttachmentDto(a.Id, a.MediaAssetId, a.DisplayName, a.ExternalUrl ?? a.MediaAsset?.RelativePath ?? string.Empty))
             .ToList()
             .AsReadOnly();
         return new AdminLessonFullDto(

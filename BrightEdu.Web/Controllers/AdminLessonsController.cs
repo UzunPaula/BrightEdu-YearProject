@@ -70,12 +70,12 @@ public class AdminLessonsController : ControllerBase
         return lesson is null ? NotFound() : Ok(lesson);
     }
 
-    [HttpPut("api/admin/lessons/{id:guid}/content-blocks")]
-    public async Task<ActionResult<AdminLessonFullDto>> SetContentBlocks(Guid id, SetContentBlocksRequest request, CancellationToken ct)
+    [HttpPut("api/admin/lessons/{id:guid}/content-blocks/{lang}")]
+    public async Task<ActionResult<AdminLessonFullDto>> SetContentBlocks(Guid id, string lang, SetContentBlocksRequest request, CancellationToken ct)
     {
         try
         {
-            var result = await _service.SetContentBlocksAsync(id, request, ct);
+            var result = await _service.SetContentBlocksAsync(id, lang, request, ct);
             return result is null ? NotFound() : Ok(result);
         }
         catch (ArgumentException ex)
@@ -91,10 +91,35 @@ public class AdminLessonsController : ControllerBase
         return result is null ? NotFound() : Ok(result);
     }
 
+    [HttpPost("api/admin/lessons/{id:guid}/attachments/link")]
+    public async Task<ActionResult<AdminAttachmentDto>> AddAttachmentLink(Guid id, AddAttachmentLinkRequest request, CancellationToken ct)
+    {
+        var result = await _service.AddAttachmentLinkAsync(id, request, ct);
+        return result is null ? NotFound() : Ok(result);
+    }
+
     [HttpDelete("api/admin/lessons/{id:guid}/attachments/{attachmentId:guid}")]
     public async Task<IActionResult> RemoveAttachment(Guid id, Guid attachmentId, CancellationToken ct)
     {
         var success = await _service.RemoveAttachmentAsync(id, attachmentId, ct);
         return success ? NoContent() : NotFound();
+    }
+
+    [HttpGet("api/admin/lessons/{id:guid}/translations")]
+    public async Task<ActionResult<IReadOnlyList<EntityTranslationDto>>> GetTranslations(Guid id, CancellationToken ct)
+        => Ok(await _service.GetTranslationsAsync(id, ct));
+
+    [HttpPut("api/admin/lessons/{id:guid}/translations/{lang}")]
+    public async Task<IActionResult> UpsertTranslation(Guid id, string lang, UpsertLessonTranslationRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var success = await _service.UpsertTranslationAsync(id, lang, request, ct);
+            return success ? NoContent() : NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

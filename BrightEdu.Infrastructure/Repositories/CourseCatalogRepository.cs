@@ -19,7 +19,10 @@ public sealed class CourseCatalogRepository : ICourseCatalogRepository
     {
         return await _dbContext.Courses
             .Include(x => x.Translations)
+            .Include(x => x.ThumbnailMediaAsset)
             .Include(x => x.Modules)
+            .ThenInclude(x => x.Translations)
+            .Include(x => x.Lessons)
             .ThenInclude(x => x.Translations)
             .Include(x => x.Lessons)
             .ThenInclude(x => x.Quiz)

@@ -20,6 +20,29 @@ public sealed class SampleDataSeeder
     {
         await _dbContext.Database.EnsureCreatedAsync(ct);
 
+        await _dbContext.Database.ExecuteSqlRawAsync(
+            "IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='LessonContentBlocks' AND COLUMN_NAME='Lang') " +
+            "ALTER TABLE LessonContentBlocks ADD Lang nvarchar(10) NOT NULL DEFAULT 'ro'", ct);
+
+        await _dbContext.Database.ExecuteSqlRawAsync(
+            "IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='LessonAttachments' AND COLUMN_NAME='ExternalUrl') " +
+            "ALTER TABLE LessonAttachments ADD ExternalUrl nvarchar(1000) NULL", ct);
+
+        await _dbContext.Database.ExecuteSqlRawAsync(@"
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+           WHERE TABLE_NAME='LessonAttachments' AND COLUMN_NAME='MediaAssetId' AND IS_NULLABLE='NO')
+BEGIN
+    DECLARE @fk NVARCHAR(256);
+    SELECT @fk = fk.name
+    FROM sys.foreign_keys fk
+    INNER JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+    INNER JOIN sys.columns c ON c.object_id = fkc.parent_object_id AND c.column_id = fkc.parent_column_id
+    WHERE OBJECT_NAME(fk.parent_object_id) = 'LessonAttachments' AND c.name = 'MediaAssetId';
+    IF @fk IS NOT NULL EXEC('ALTER TABLE LessonAttachments DROP CONSTRAINT [' + @fk + ']');
+    ALTER TABLE LessonAttachments ALTER COLUMN MediaAssetId uniqueidentifier NULL;
+    IF @fk IS NOT NULL EXEC('ALTER TABLE LessonAttachments ADD CONSTRAINT [' + @fk + '] FOREIGN KEY (MediaAssetId) REFERENCES MediaAssets(Id)');
+END", ct);
+
         if (!await _dbContext.Roles.AnyAsync(ct))
         {
             var adminRole = new Role(Guid.NewGuid(), "Admin");

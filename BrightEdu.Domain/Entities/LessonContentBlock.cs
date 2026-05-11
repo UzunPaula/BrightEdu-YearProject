@@ -8,7 +8,7 @@ public class LessonContentBlock
     {
     }
 
-    public LessonContentBlock(Guid id, Guid lessonId, int order, ContentBlockType blockType, string configJson)
+    public LessonContentBlock(Guid id, Guid lessonId, int order, ContentBlockType blockType, string configJson, string lang = "ro")
     {
         if (id == Guid.Empty) throw new ArgumentException("Id invalid.", nameof(id));
         if (lessonId == Guid.Empty) throw new ArgumentException("LessonId invalid.", nameof(lessonId));
@@ -20,6 +20,7 @@ public class LessonContentBlock
         Order = order;
         BlockType = blockType;
         ConfigJson = configJson.Trim();
+        Lang = lang.ToLowerInvariant();
     }
 
     public Guid Id { get; private set; }
@@ -28,4 +29,5 @@ public class LessonContentBlock
     public int Order { get; private set; }
     public ContentBlockType BlockType { get; private set; }
     public string ConfigJson { get; private set; } = null!;
+    public string Lang { get; private set; } = "ro";
 }

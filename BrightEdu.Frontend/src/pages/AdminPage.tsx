@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { brightEduApi } from "../shared/api/brightEduApi";
 import { ErrorPanel } from "../shared/components/ErrorPanel";
@@ -166,7 +166,9 @@ function CoursesTab({ token, onSelectCourse }: { token: string; onSelectCourse: 
   const [view, setView] = useState<"list" | "form">("list");
   const [editing, setEditing] = useState<AdminCourse | null>(null);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [form, setForm] = useState<CreateCoursePayload>({ title: "", shortDescription: "", fullDescription: "", level: "Beginner" });
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     try {
@@ -180,6 +182,114 @@ function CoursesTab({ token, onSelectCourse }: { token: string; onSelectCourse: 
   };
 
   useEffect(() => { void load(); }, []);
+
+  const downloadTemplate = () => {
+    const template = {
+      title: "Titlul cursului",
+      shortDescription: "Descriere scurtă",
+      fullDescription: "Descriere completă",
+      level: "Beginner",
+      translations: [
+        { lang: "en", title: "Course Title EN", shortDescription: "Short desc EN", fullDescription: "Full desc EN" }
+      ],
+      modules: [
+        {
+          order: 1,
+          title: "Modulul 1",
+          description: "Descriere modul",
+          published: false,
+          translations: [{ lang: "en", title: "Module 1 EN", description: "Module desc EN" }],
+          lessons: [
+            {
+              order: 1,
+              title: "Lecția 1",
+              summary: "Sumar lecție",
+              estimatedMinutes: 30,
+              codeEditorEnabled: false,
+              published: false,
+              translations: [{ lang: "en", title: "Lesson 1 EN", summary: "Lesson summary EN" }],
+              contentBlocks: [
+                { lang: "ro", order: 1, blockType: "Text",       configJson: JSON.stringify({ content: "Conținut text în română. Suportă **markdown**." }) },
+                { lang: "ro", order: 2, blockType: "Image",      configJson: JSON.stringify({ url: "https://example.com/image.png", alt: "Descriere imagine" }) },
+                { lang: "ro", order: 3, blockType: "Video",      configJson: JSON.stringify({ url: "https://www.youtube.com/embed/dQw4w9WgXcQ", title: "Titlu video" }) },
+                { lang: "ro", order: 4, blockType: "PdfEmbed",   configJson: JSON.stringify({ url: "https://example.com/document.pdf", title: "Titlu document PDF" }) },
+                { lang: "ro", order: 5, blockType: "CodeEditor", configJson: JSON.stringify({ language: "javascript", starterCode: "console.log('Hello, World!');", readOnly: "false" }) },
+                { lang: "en", order: 1, blockType: "Text",       configJson: JSON.stringify({ content: "Text content in English. Supports **markdown**." }) },
+                { lang: "en", order: 2, blockType: "Image",      configJson: JSON.stringify({ url: "https://example.com/image.png", alt: "Image description" }) },
+                { lang: "en", order: 3, blockType: "Video",      configJson: JSON.stringify({ url: "https://www.youtube.com/embed/dQw4w9WgXcQ", title: "Video title" }) },
+                { lang: "en", order: 4, blockType: "PdfEmbed",   configJson: JSON.stringify({ url: "https://example.com/document.pdf", title: "PDF document title" }) },
+                { lang: "en", order: 5, blockType: "CodeEditor", configJson: JSON.stringify({ language: "javascript", starterCode: "console.log('Hello, World!');", readOnly: "false" }) }
+              ],
+              quiz: {
+                title: "Quiz Lecția 1",
+                passingScore: 70,
+                maxAttempts: 3,
+                shuffleQuestions: false,
+                shuffleAnswers: false,
+                published: false,
+                questions: [
+                  {
+                    order: 1,
+                    text: "Întrebarea 1?",
+                    type: "SingleChoice",
+                    points: 10,
+                    answers: [
+                      { order: 1, text: "Răspuns corect", isCorrect: true },
+                      { order: 2, text: "Răspuns greșit A", isCorrect: false },
+                      { order: 3, text: "Răspuns greșit B", isCorrect: false }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      standaloneLessons: [
+        {
+          order: 1,
+          title: "Lecție independentă — toate tipurile de blocuri",
+          summary: "Exemplu cu toate tipurile de blocuri disponibile",
+          estimatedMinutes: 15,
+          codeEditorEnabled: true,
+          published: false,
+          translations: [{ lang: "en", title: "Standalone lesson — all block types", summary: "Example with all available block types" }],
+          contentBlocks: [
+            { lang: "ro", order: 1, blockType: "Text",       configJson: JSON.stringify({ content: "Bloc de text. Suportă **bold**, *italic*, `cod inline`, [link](https://example.com)." }) },
+            { lang: "ro", order: 2, blockType: "Image",      configJson: JSON.stringify({ url: "https://example.com/image.png", alt: "Text alternativ imagine" }) },
+            { lang: "ro", order: 3, blockType: "Video",      configJson: JSON.stringify({ url: "https://www.youtube.com/embed/dQw4w9WgXcQ", title: "Titlu video opțional" }) },
+            { lang: "ro", order: 4, blockType: "PdfEmbed",   configJson: JSON.stringify({ url: "https://example.com/document.pdf", title: "Titlu document opțional" }) },
+            { lang: "ro", order: 5, blockType: "CodeEditor", configJson: JSON.stringify({ language: "python", starterCode: "print('Hello, World!')", readOnly: "false" }) }
+          ],
+          quiz: null
+        }
+      ],
+      published: false
+    };
+    const blob = new Blob([JSON.stringify(template, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "curs-template.json"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      const result = await brightEduApi.adminImportCourse(payload, token);
+      toast.success(t("admin.importSuccess", { title: result.title, modules: result.modulesImported, lessons: result.lessonsImported, quizzes: result.quizzesImported }));
+      void load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("admin.importError"));
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -274,9 +384,18 @@ function CoursesTab({ token, onSelectCourse }: { token: string; onSelectCourse: 
   return (
     <div>
       {dialogNode}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", gap: "0.75rem", flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>{t("admin.courses", { count: courses.length })}</h2>
-        <button className="btn-primary" onClick={openCreate}>{t("admin.newCourse")}</button>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          <button className="btn-secondary" onClick={downloadTemplate} style={{ fontSize: "0.85rem" }}>
+            ⬇ {t("admin.downloadTemplate")}
+          </button>
+          <button className="btn-secondary" onClick={() => importInputRef.current?.click()} disabled={importing} style={{ fontSize: "0.85rem" }}>
+            {importing ? t("common.loading") : `📂 ${t("admin.importCourse")}`}
+          </button>
+          <input ref={importInputRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={e => void handleImportFile(e)} />
+          <button className="btn-primary" onClick={openCreate}>{t("admin.newCourse")}</button>
+        </div>
       </div>
 
       {courses.length === 0 ? (
@@ -811,7 +930,7 @@ function buildConfigJson(blockType: string, fields: Record<string, string>): str
   if (blockType === "Image") return JSON.stringify({ url: fields.url ?? "", alt: fields.alt ?? "" });
   if (blockType === "Video") return JSON.stringify({ title: fields.title ?? "", url: fields.url ?? "" });
   if (blockType === "PdfEmbed") return JSON.stringify({ title: fields.title ?? "", url: fields.url ?? "" });
-  if (blockType === "CodeEditor") return JSON.stringify({ language: fields.language ?? "javascript", starterCode: fields.starterCode ?? "" });
+  if (blockType === "CodeEditor") return JSON.stringify({ language: fields.language ?? "javascript", starterCode: fields.starterCode ?? "", readOnly: fields.readOnly ?? "false" });
   return "{}";
 }
 
@@ -891,6 +1010,14 @@ function BlockEditor({ block, onChange, onRemove, onMoveUp, onMoveDown, isFirst,
             <option value="css">CSS</option>
           </select>
           <textarea className="input" rows={4} value={fields.starterCode ?? ""} onChange={e => update("starterCode", e.target.value)} placeholder="Starter code..." style={{ fontFamily: "monospace" }} />
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", userSelect: "none" }}>
+            <input
+              type="checkbox"
+              checked={fields.readOnly === "true"}
+              onChange={e => update("readOnly", e.target.checked ? "true" : "false")}
+            />
+            <span className="muted" style={{ fontSize: "0.88rem" }}>{t("admin.codeReadOnly")}</span>
+          </label>
         </>
       )}
 
@@ -918,6 +1045,8 @@ function LessonContentEditor({ token, lessonId, onDone }: {
   const toast = useToast();
   const { confirm, dialogNode } = useConfirm();
   const [lesson, setLesson] = useState<AdminLessonFull | null>(null);
+  const [contentLang, setContentLang] = useState<"ro" | "en" | "ru">("ro");
+  const [blocksByLang, setBlocksByLang] = useState<Record<string, LocalBlock[]>>({ ro: [], en: [], ru: [] });
   const [blocks, setBlocks] = useState<LocalBlock[]>([]);
   const [attachments, setAttachments] = useState<AdminAttachment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -925,18 +1054,39 @@ function LessonContentEditor({ token, lessonId, onDone }: {
   const [pickerForAttachment, setPickerForAttachment] = useState(false);
   const [attachDisplayName, setAttachDisplayName] = useState("");
   const [selectedAsset, setSelectedAsset] = useState<AdminMediaAsset | null>(null);
+  const [attachMode, setAttachMode] = useState<"media" | "url">("media");
+  const [attachUrl, setAttachUrl] = useState("");
   const API_B = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5164";
 
   useEffect(() => {
     brightEduApi.adminGetLessonFull(lessonId, token)
       .then(data => {
         setLesson(data);
-        setBlocks(data.contentBlocks.map(b => ({ ...b })));
+        const grouped: Record<string, LocalBlock[]> = { ro: [], en: [], ru: [] };
+        for (const b of data.contentBlocks) {
+          const l = b.lang ?? "ro";
+          if (!grouped[l]) grouped[l] = [];
+          grouped[l].push({ ...b });
+        }
+        setBlocksByLang(grouped);
+        setBlocks(grouped["ro"] ?? []);
         setAttachments(data.attachments.map(a => ({ ...a })));
       })
       .catch(e => toast.error(e instanceof Error ? e.message : t("common.errorLoad")))
       .finally(() => setLoading(false));
   }, [lessonId]);
+
+  const switchContentLang = (lang: "ro" | "en" | "ru") => {
+    const saved = { ...blocksByLang, [contentLang]: blocks };
+    const target = saved[lang] ?? [];
+    // Pre-populate with current language blocks if switching to an empty language
+    const nextBlocks = target.length > 0
+      ? target
+      : blocks.map(b => ({ ...b, id: crypto.randomUUID() }));
+    setBlocksByLang(saved);
+    setContentLang(lang);
+    setBlocks(nextBlocks);
+  };
 
   const addBlock = (blockType: string) => {
     const newOrder = blocks.length + 1;
@@ -967,7 +1117,7 @@ function LessonContentEditor({ token, lessonId, onDone }: {
   const saveBlocks = async () => {
     setSaving(true);
     try {
-      await brightEduApi.adminSetContentBlocks(lessonId, { blocks: blocks.map(b => ({ blockType: b.blockType, order: b.order, configJson: b.configJson })) }, token);
+      await brightEduApi.adminSetContentBlocks(lessonId, contentLang, { blocks: blocks.map(b => ({ blockType: b.blockType, order: b.order, configJson: b.configJson })) }, token);
       toast.success(t("admin.contentSaved"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("common.errorSave"));
@@ -977,15 +1127,28 @@ function LessonContentEditor({ token, lessonId, onDone }: {
   };
 
   const handleAddAttachment = async () => {
-    if (!selectedAsset || !attachDisplayName.trim()) return;
-    try {
-      const att = await brightEduApi.adminAddAttachment(lessonId, { mediaAssetId: selectedAsset.id, displayName: attachDisplayName.trim() }, token);
-      setAttachments(prev => [...prev, { ...att, url: selectedAsset.url }]);
-      setSelectedAsset(null);
-      setAttachDisplayName("");
-      toast.success(t("admin.attachmentAdded"));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("common.errorCreate"));
+    if (attachMode === "url") {
+      if (!attachUrl.trim() || !attachDisplayName.trim()) return;
+      try {
+        const att = await brightEduApi.adminAddAttachmentLink(lessonId, { externalUrl: attachUrl.trim(), displayName: attachDisplayName.trim() }, token);
+        setAttachments(prev => [...prev, { ...att, url: attachUrl.trim() }]);
+        setAttachUrl("");
+        setAttachDisplayName("");
+        toast.success(t("admin.attachmentAdded"));
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : t("common.errorCreate"));
+      }
+    } else {
+      if (!selectedAsset || !attachDisplayName.trim()) return;
+      try {
+        const att = await brightEduApi.adminAddAttachment(lessonId, { mediaAssetId: selectedAsset.id, displayName: attachDisplayName.trim() }, token);
+        setAttachments(prev => [...prev, { ...att, url: selectedAsset.url }]);
+        setSelectedAsset(null);
+        setAttachDisplayName("");
+        toast.success(t("admin.attachmentAdded"));
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : t("common.errorCreate"));
+      }
     }
   };
 
@@ -1010,10 +1173,32 @@ function LessonContentEditor({ token, lessonId, onDone }: {
 
         {/* Content Blocks */}
         <section>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+            <h3 style={{ margin: 0, marginRight: "0.5rem" }}>{t("admin.contentBlocks")}</h3>
+            {(["ro", "en", "ru"] as const).map(lang => (
+              <button
+                key={lang}
+                onClick={() => switchContentLang(lang)}
+                style={{
+                  padding: "0.2rem 0.65rem",
+                  borderRadius: 6,
+                  border: contentLang === lang ? "2px solid var(--accent)" : "2px solid transparent",
+                  background: contentLang === lang ? "var(--accent)" : "var(--btn-secondary-bg)",
+                  color: contentLang === lang ? "#fff" : "inherit",
+                  fontWeight: contentLang === lang ? 700 : 400,
+                  fontSize: "0.82rem",
+                  cursor: "pointer",
+                  textTransform: "uppercase"
+                }}
+              >
+                {lang}
+              </button>
+            ))}
+          </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-            <h3 style={{ margin: 0 }}>{t("admin.contentBlocks")}</h3>
+            <span className="muted" style={{ fontSize: "0.82rem" }}>{t("admin.editingLang", { lang: contentLang.toUpperCase() })}</span>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              {(["Text", "Image", "Video", "PdfEmbed", "CodeEditor"] as const).map(bt => (
+              {(["Text", "Image", "Video", "CodeEditor"] as const).map(bt => (
                 <button key={bt} className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => addBlock(bt)}>
                   + {bt}
                 </button>
@@ -1060,7 +1245,7 @@ function LessonContentEditor({ token, lessonId, onDone }: {
                   <div>
                     <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{att.displayName}</span>
                     <span className="muted" style={{ fontSize: "0.8rem", marginLeft: "0.75rem" }}>
-                      <a href={`${API_B}${att.url}`} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{att.url}</a>
+                      <a href={att.url.startsWith("http") ? att.url : `${API_B}${att.url}`} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{att.url}</a>
                     </span>
                   </div>
                   <button className="btn-danger" style={{ fontSize: "0.8rem", padding: "0 0.75rem", minHeight: 30 }} onClick={() => void handleRemoveAttachment(att)}>
@@ -1072,19 +1257,42 @@ function LessonContentEditor({ token, lessonId, onDone }: {
           )}
 
           <div className="panel" style={{ padding: "0.85rem", display: "grid", gap: "0.6rem" }}>
-            <p style={{ margin: 0, fontWeight: 600, fontSize: "0.9rem" }}>{t("admin.addAttachmentTitle")}</p>
-            <input className="input" value={attachDisplayName} onChange={e => setAttachDisplayName(e.target.value)} placeholder={t("admin.displayNamePlaceholder")} />
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-              <span className="muted" style={{ fontSize: "0.85rem", flex: 1 }}>
-                {selectedAsset ? selectedAsset.fileName : t("admin.noFileSelected")}
-              </span>
-              <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => setPickerForAttachment(true)}>
-                {t("admin.chooseFromMedia")}
-              </button>
-              <button className="btn-primary" style={{ fontSize: "0.8rem" }} onClick={() => void handleAddAttachment()} disabled={!selectedAsset || !attachDisplayName.trim()}>
-                {t("common.add")}
-              </button>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <p style={{ margin: 0, fontWeight: 600, fontSize: "0.9rem" }}>{t("admin.addAttachmentTitle")}</p>
+              <div style={{ display: "flex", gap: "0.25rem" }}>
+                {(["media", "url"] as const).map(mode => (
+                  <button key={mode} onClick={() => setAttachMode(mode)} style={{
+                    padding: "0.15rem 0.6rem", borderRadius: 6, fontSize: "0.78rem", cursor: "pointer",
+                    border: attachMode === mode ? "2px solid var(--accent)" : "2px solid transparent",
+                    background: attachMode === mode ? "var(--accent)" : "var(--btn-secondary-bg)",
+                    color: attachMode === mode ? "#fff" : "inherit", fontWeight: attachMode === mode ? 700 : 400,
+                  }}>
+                    {mode === "media" ? t("admin.fromMedia") : t("admin.fromUrl")}
+                  </button>
+                ))}
+              </div>
             </div>
+            <input className="input" value={attachDisplayName} onChange={e => setAttachDisplayName(e.target.value)} placeholder={t("admin.displayNamePlaceholder")} />
+            {attachMode === "url" ? (
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <input className="input" style={{ flex: 1 }} value={attachUrl} onChange={e => setAttachUrl(e.target.value)} placeholder="https://example.com/document.pdf" />
+                <button className="btn-primary" style={{ fontSize: "0.8rem" }} onClick={() => void handleAddAttachment()} disabled={!attachUrl.trim() || !attachDisplayName.trim()}>
+                  {t("common.add")}
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <span className="muted" style={{ fontSize: "0.85rem", flex: 1 }}>
+                  {selectedAsset ? selectedAsset.fileName : t("admin.noFileSelected")}
+                </span>
+                <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => setPickerForAttachment(true)}>
+                  {t("admin.chooseFromMedia")}
+                </button>
+                <button className="btn-primary" style={{ fontSize: "0.8rem" }} onClick={() => void handleAddAttachment()} disabled={!selectedAsset || !attachDisplayName.trim()}>
+                  {t("common.add")}
+                </button>
+              </div>
+            )}
           </div>
         </section>
       </div>

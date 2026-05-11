@@ -21,6 +21,7 @@ public sealed class LessonRepository : ILessonRepository
     public async Task<Lesson?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await _dbContext.Lessons
+            .Include(l => l.Course)
             .Include(l => l.Translations)
             .Include(l => l.ContentBlocks)
             .Include(l => l.Attachments)

@@ -20,6 +20,7 @@ public sealed record LessonProgressDto(
     Guid LessonId,
     string LessonTitle,
     string? CourseSlug,
+    string? CourseTitle,
     bool IsCompleted,
     DateTime? CompletedAt,
     DateTime LastOpenedAt);

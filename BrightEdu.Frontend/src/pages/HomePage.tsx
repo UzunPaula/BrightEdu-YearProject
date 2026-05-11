@@ -1,13 +1,17 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { brightEduApi } from "../shared/api/brightEduApi";
+import { useAuth } from "../features/auth/AuthContext";
 import type { CourseCard } from "../shared/types/api";
 import { LoadingPanel } from "../shared/components/LoadingPanel";
 import { ErrorPanel } from "../shared/components/ErrorPanel";
+import bannerRightImage from "../assets/banner-right-image.png";
 
 export function HomePage() {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState<CourseCard[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,6 +30,14 @@ export function HomePage() {
     void load();
   }, [i18n.language]);
 
+  const handleViewCourse = (slug: string) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    navigate(`/courses/${slug}`);
+  };
+
   return (
     <>
       <section className="hero">
@@ -38,27 +50,16 @@ export function HomePage() {
             <Link className="btn-primary" to="/courses">
               {t("hero.primary")}
             </Link>
-            <Link className="btn-secondary" to="/admin">
-              {t("hero.secondary")}
-            </Link>
+            {user?.roles.includes("Admin") && (
+              <Link className="btn-secondary" to="/admin">
+                {t("hero.secondary")}
+              </Link>
+            )}
           </div>
         </div>
 
-        <div className="hero-card hero-visual">
-          <div className="hero-visual-content">
-            <div className="floating-stat">
-              <strong>{t("hero.statPatterns")}</strong>
-              <div className="muted">{t("hero.statPatternsLabel")}</div>
-            </div>
-            <div className="floating-card">
-              <strong>{t("hero.statFlow")}</strong>
-              <div className="muted">{t("hero.statFlowLabel")}</div>
-            </div>
-            <div className="floating-card">
-              <strong>{t("hero.statMultilang")}</strong>
-              <div className="muted">{t("hero.statMultilangLabel")}</div>
-            </div>
-          </div>
+        <div className="hero-visual">
+          <img src={bannerRightImage} alt="Student learning" className="hero-main-img" />
         </div>
       </section>
 
@@ -83,9 +84,9 @@ export function HomePage() {
                 <h3>{course.title}</h3>
                 <p className="muted">{course.shortDescription ?? t("hero.descPlaceholder")}</p>
                 <div className="actions">
-                  <Link className="btn-secondary" to={`/courses/${course.slug}`}>
+                  <button className="btn-secondary" onClick={() => handleViewCourse(course.slug)}>
                     {t("hero.viewCourse")}
-                  </Link>
+                  </button>
                 </div>
               </article>
             ))}

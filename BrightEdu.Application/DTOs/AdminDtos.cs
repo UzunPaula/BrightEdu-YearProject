@@ -96,8 +96,8 @@ public sealed record AdminQuestionDto(Guid Id, Guid QuizId, string Text, string 
 
 // ─── Lesson Content ───────────────────────────────────────────────────────────
 
-public sealed record AdminContentBlockDto(Guid Id, string BlockType, int Order, string ConfigJson);
-public sealed record AdminAttachmentDto(Guid Id, Guid MediaAssetId, string DisplayName, string Url);
+public sealed record AdminContentBlockDto(Guid Id, string BlockType, int Order, string ConfigJson, string Lang);
+public sealed record AdminAttachmentDto(Guid Id, Guid? MediaAssetId, string DisplayName, string Url);
 public sealed record AdminLessonFullDto(
     Guid Id,
     Guid CourseId,
@@ -115,6 +115,56 @@ public sealed record AdminLessonFullDto(
 public sealed record ContentBlockInputDto(string BlockType, int Order, string ConfigJson);
 public sealed record SetContentBlocksRequest(IReadOnlyList<ContentBlockInputDto> Blocks);
 public sealed record AddAttachmentRequest(Guid MediaAssetId, string DisplayName);
+public sealed record AddAttachmentLinkRequest(string ExternalUrl, string DisplayName);
+
+// ─── Translations ─────────────────────────────────────────────────────────────
+
+public sealed record EntityTranslationDto(string Lang, string Title, string? Field2, string? Field3);
+public sealed record UpsertCourseTranslationRequest(string Title, string? ShortDescription, string? FullDescription);
+public sealed record UpsertModuleTranslationRequest(string Title, string? Description);
+public sealed record UpsertLessonTranslationRequest(string Title, string Summary);
+
+// ─── Course Import ────────────────────────────────────────────────────────────
+
+public sealed record CourseImportTranslationDto(string Lang, string Title, string? ShortDescription, string? FullDescription);
+public sealed record ModuleImportTranslationDto(string Lang, string Title, string? Description);
+public sealed record LessonImportTranslationDto(string Lang, string Title, string Summary);
+
+public sealed record AnswerImportDto(int Order, string Text, bool IsCorrect);
+public sealed record QuestionImportDto(int Order, string Text, string Type, int Points, IReadOnlyList<AnswerImportDto> Answers);
+public sealed record QuizImportDto(string Title, int PassingScore, int MaxAttempts, bool ShuffleQuestions, bool ShuffleAnswers, IReadOnlyList<QuestionImportDto> Questions, bool Published = false);
+public sealed record ContentBlockImportDto(string Lang, int Order, string BlockType, string ConfigJson);
+
+public sealed record LessonImportDto(
+    int Order,
+    string Title,
+    string Summary,
+    int EstimatedMinutes,
+    bool CodeEditorEnabled,
+    IReadOnlyList<LessonImportTranslationDto> Translations,
+    IReadOnlyList<ContentBlockImportDto> ContentBlocks,
+    QuizImportDto? Quiz,
+    bool Published = false);
+
+public sealed record ModuleImportDto(
+    int Order,
+    string Title,
+    string? Description,
+    IReadOnlyList<ModuleImportTranslationDto> Translations,
+    IReadOnlyList<LessonImportDto> Lessons,
+    bool Published = false);
+
+public sealed record CourseImportDto(
+    string Title,
+    string? ShortDescription,
+    string? FullDescription,
+    string Level,
+    IReadOnlyList<CourseImportTranslationDto> Translations,
+    IReadOnlyList<ModuleImportDto> Modules,
+    IReadOnlyList<LessonImportDto> StandaloneLessons,
+    bool Published = false);
+
+public sealed record CourseImportResultDto(Guid CourseId, string Title, int ModulesImported, int LessonsImported, int QuizzesImported);
 
 // ─── Media ───────────────────────────────────────────────────────────────────
 

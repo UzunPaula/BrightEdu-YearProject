@@ -70,6 +70,7 @@ public sealed record LessonQuizDto(
 public sealed record LessonDetailsDto(
     Guid Id,
     Guid CourseId,
+    string? CourseSlug,
     Guid? ModuleId,
     int Order,
     string Title,

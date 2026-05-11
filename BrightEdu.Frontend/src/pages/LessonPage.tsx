@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../features/auth/AuthContext";
 import { brightEduApi } from "../shared/api/brightEduApi";
@@ -181,6 +181,11 @@ export function LessonPage() {
       {!isLoading && !error && lesson ? (
         <>
           <div className="page-title">
+            {lesson.courseSlug && (
+              <Link to={`/courses/${lesson.courseSlug}`} className="btn-secondary" style={{ alignSelf: "flex-start", marginBottom: "0.75rem", fontSize: "0.875rem" }}>
+                {t("lesson.backToCourse")}
+              </Link>
+            )}
             <span className="eyebrow">{t("lesson.eyebrow")}</span>
             <h1>{lesson.title}</h1>
             <p className="muted">{lesson.summary}</p>
@@ -206,7 +211,7 @@ export function LessonPage() {
                     {lesson.attachments.map((attachment) => (
                       <a
                         key={attachment.id}
-                        href={`${API_BASE}${attachment.url}`}
+                        href={attachment.url.startsWith("http") ? attachment.url : `${API_BASE}${attachment.url}`}
                         target="_blank"
                         rel="noreferrer"
                         style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", color: "var(--accent-strong)", textDecoration: "none", fontWeight: 500 }}
@@ -429,15 +434,14 @@ function PdfBlock({ url, title }: { url: string; title?: string }) {
   if (!url) return <p className="muted">{t("lesson.pdfNoUrl")}</p>;
   const src = url.startsWith("http") ? url : `${API_BASE}${url}`;
   return (
-    <div>
-      {title && <p style={{ fontWeight: 600, marginBottom: "0.5rem" }}>{title}</p>}
-      <iframe
-        src={src}
-        style={{ width: "100%", height: 520, border: "none", borderRadius: 12 }}
-        title={title ?? "PDF"}
-      />
-      <a href={src} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "0.5rem", fontSize: "0.85rem", color: "var(--accent-strong)" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 1rem", background: "var(--card-bg)", border: "1px solid var(--line)", borderRadius: 10 }}>
+      <span style={{ fontSize: "1.5rem" }}>📄</span>
+      <span style={{ fontWeight: 600, flex: 1, fontSize: "0.95rem" }}>{title ?? "PDF"}</span>
+      <a href={src} target="_blank" rel="noreferrer" className="btn-secondary" style={{ fontSize: "0.82rem", textDecoration: "none", padding: "0.25rem 0.75rem" }}>
         {t("lesson.openInNewTab")}
+      </a>
+      <a href={src} download className="btn-primary" style={{ fontSize: "0.82rem", textDecoration: "none", padding: "0.25rem 0.75rem" }}>
+        {t("lesson.download")}
       </a>
     </div>
   );
@@ -534,7 +538,7 @@ function runJsInBrowser(code: string, noOutput: string, timeout: string, onOutpu
   }, 5000);
 }
 
-function CodeEditorBlock({ language, starterCode }: { language: string; starterCode: string }) {
+function CodeEditorBlock({ language, starterCode, readOnly = false }: { language: string; starterCode: string; readOnly?: boolean }) {
   const { t } = useTranslation();
   const [code, setCode] = useState(starterCode);
   const [output, setOutput] = useState<string | null>(null);
@@ -579,39 +583,63 @@ function CodeEditorBlock({ language, starterCode }: { language: string; starterC
     }
   };
 
+  const lineCount = code.split("\n").length;
+  const editorHeight = Math.max(80, Math.min(640, lineCount * 21 + 20));
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       <div style={{ border: "1px solid var(--line)", borderRadius: 12, overflow: "hidden" }}>
         <Editor
-          height="320px"
+          height={`${editorHeight}px`}
           language={language}
           value={code}
-          onChange={v => setCode(v ?? "")}
+          onChange={readOnly ? undefined : v => setCode(v ?? "")}
           theme="vs-dark"
-          options={{ minimap: { enabled: false }, fontSize: 14, scrollBeyondLastLine: false, automaticLayout: true }}
+          options={{
+            minimap: { enabled: false },
+            fontSize: 14,
+            scrollBeyondLastLine: false,
+            automaticLayout: true,
+            readOnly,
+            domReadOnly: readOnly,
+          }}
         />
       </div>
-      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
-        {runsInBrowser ? (
-          <button className="btn-primary" onClick={() => void runCode()} disabled={running} style={{ minWidth: 120 }}>
-            {running ? t("lesson.running") : t("lesson.run")}
-          </button>
-        ) : playground ? (
-          <>
-            <button
-              className="btn-secondary"
-              onClick={() => { void navigator.clipboard.writeText(code); }}
-              style={{ minWidth: 120 }}
-            >
-              {t("lesson.copyCode")}
+      {!readOnly && (
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+          {runsInBrowser ? (
+            <button className="btn-primary" onClick={() => void runCode()} disabled={running} style={{ minWidth: 120 }}>
+              {running ? t("lesson.running") : t("lesson.run")}
             </button>
-            <a href={playground.url} target="_blank" rel="noreferrer" className="btn-primary" style={{ minWidth: 140, textDecoration: "none", textAlign: "center" }}>
-              {t("lesson.openPlayground", { label: playground.label })}
-            </a>
-          </>
-        ) : null}
-        <span className="muted" style={{ fontSize: "0.8rem" }}>{language}</span>
-      </div>
+          ) : playground ? (
+            <>
+              <button
+                className="btn-secondary"
+                onClick={() => { void navigator.clipboard.writeText(code); }}
+                style={{ minWidth: 120 }}
+              >
+                {t("lesson.copyCode")}
+              </button>
+              <a href={playground.url} target="_blank" rel="noreferrer" className="btn-primary" style={{ minWidth: 140, textDecoration: "none", textAlign: "center" }}>
+                {t("lesson.openPlayground", { label: playground.label })}
+              </a>
+            </>
+          ) : null}
+          <span className="muted" style={{ fontSize: "0.8rem" }}>{language}</span>
+        </div>
+      )}
+      {readOnly && (
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+          <button
+            className="btn-secondary"
+            onClick={() => { void navigator.clipboard.writeText(code); }}
+            style={{ minWidth: 120, fontSize: "0.88rem" }}
+          >
+            {t("lesson.copyCode")}
+          </button>
+          <span className="muted" style={{ fontSize: "0.8rem" }}>{language}</span>
+        </div>
+      )}
       {isHtml && (
         <div>
           <p className="muted" style={{ fontSize: "0.8rem", marginBottom: "0.4rem" }}>{t("lesson.previewHtml")}</p>
@@ -646,7 +674,7 @@ function ContentBlock({ blockType, parsed }: { blockType: string; parsed: Record
     case "PdfEmbed":
       return <PdfBlock url={parsed.url ?? ""} title={parsed.title} />;
     case "CodeEditor":
-      return <CodeEditorBlock language={parsed.language ?? "javascript"} starterCode={parsed.starterCode ?? ""} />;
+      return <CodeEditorBlock language={parsed.language ?? "javascript"} starterCode={parsed.starterCode ?? ""} readOnly={parsed.readOnly === "true"} />;
     default:
       return null;
   }

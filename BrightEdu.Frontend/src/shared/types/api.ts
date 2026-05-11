@@ -76,6 +76,7 @@ export type LessonQuiz = {
 export type LessonDetails = {
   id: string;
   courseId: string;
+  courseSlug: string | null;
   moduleId: string | null;
   order: number;
   title: string;
@@ -152,6 +153,7 @@ export type LessonProgress = {
   lessonId: string;
   lessonTitle: string;
   courseSlug: string | null;
+  courseTitle: string | null;
   isCompleted: boolean;
   completedAt: string | null;
   lastOpenedAt: string;
@@ -308,6 +310,7 @@ export type AdminContentBlock = {
   blockType: string;
   order: number;
   configJson: string;
+  lang: string;
 };
 
 export type AdminAttachment = {
@@ -340,6 +343,19 @@ export type ContentBlockInput = {
 
 export type SetContentBlocksPayload = { blocks: ContentBlockInput[] };
 export type AddAttachmentPayload = { mediaAssetId: string; displayName: string };
+
+export type CourseImportTranslation = { lang: string; title: string; shortDescription?: string; fullDescription?: string };
+export type ModuleImportTranslation = { lang: string; title: string; description?: string };
+export type LessonImportTranslation = { lang: string; title: string; summary: string };
+export type AnswerImport = { order: number; text: string; isCorrect: boolean };
+export type QuestionImport = { order: number; text: string; type: string; points: number; answers: AnswerImport[] };
+export type QuizImport = { title: string; passingScore: number; maxAttempts: number; shuffleQuestions: boolean; shuffleAnswers: boolean; questions: QuestionImport[]; published?: boolean };
+export type ContentBlockImport = { lang: string; order: number; blockType: string; configJson: string };
+export type LessonImport = { order: number; title: string; summary: string; estimatedMinutes: number; codeEditorEnabled: boolean; translations: LessonImportTranslation[]; contentBlocks: ContentBlockImport[]; quiz: QuizImport | null; published?: boolean };
+export type ModuleImport = { order: number; title: string; description?: string; translations: ModuleImportTranslation[]; lessons: LessonImport[]; published?: boolean };
+export type CourseImportPayload = { title: string; shortDescription?: string; fullDescription?: string; level: string; translations: CourseImportTranslation[]; modules: ModuleImport[]; standaloneLessons: LessonImport[]; published?: boolean };
+export type CourseImportResult = { courseId: string; title: string; modulesImported: number; lessonsImported: number; quizzesImported: number };
+export type AddAttachmentLinkPayload = { externalUrl: string; displayName: string };
 
 export type EntityTranslation = {
   lang: string;

@@ -1,3 +1,4 @@
+using BrightEdu.Application.DesignPatterns.Mediator;
 using BrightEdu.Application.DTOs;
 using BrightEdu.Application.Interfaces;
 using BrightEdu.Domain.Entities;
@@ -14,32 +15,41 @@ public sealed class LessonProgressService : ILessonProgressService
 {
     private readonly ILessonProgressRepository _lessonProgressRepository;
     private readonly ILessonRepository _lessonRepository;
+    private readonly ILessonCompletionMediator _mediator;
 
     public LessonProgressService(
         ILessonProgressRepository lessonProgressRepository,
-        ILessonRepository lessonRepository)
+        ILessonRepository lessonRepository,
+        ILessonCompletionMediator mediator)
     {
         _lessonProgressRepository = lessonProgressRepository;
         _lessonRepository = lessonRepository;
+        _mediator = mediator;
     }
 
     public async Task<LessonProgressDto> MarkOpenedAsync(Guid studentId, Guid lessonId, CancellationToken ct = default)
     {
-        var progress = await GetOrCreateAsync(studentId, lessonId, ct);
+        var (progress, lesson) = await GetOrCreateAsync(studentId, lessonId, ct);
         progress.MarkOpened();
         await _lessonProgressRepository.SaveChangesAsync(ct);
-        return Map(progress);
+        return Map(progress, lesson);
     }
 
     public async Task<LessonProgressDto> UpdateAsync(Guid studentId, UpdateLessonProgressRequestDto request, CancellationToken ct = default)
     {
-        var progress = await GetOrCreateAsync(studentId, request.LessonId, ct);
+        var (progress, lesson) = await GetOrCreateAsync(studentId, request.LessonId, ct);
+        var wasCompleted = progress.IsCompleted;
         progress.MarkCompleted(request.IsCompleted);
         await _lessonProgressRepository.SaveChangesAsync(ct);
-        return Map(progress);
+
+        // Mediator — notifică colegii doar la prima finalizare a lecției
+        if (request.IsCompleted && !wasCompleted)
+            await _mediator.NotifyLessonCompletedAsync(studentId, request.LessonId, ct);
+
+        return Map(progress, lesson);
     }
 
-    private async Task<LessonProgress> GetOrCreateAsync(Guid studentId, Guid lessonId, CancellationToken ct)
+    private async Task<(LessonProgress, Lesson)> GetOrCreateAsync(Guid studentId, Guid lessonId, CancellationToken ct)
     {
         var lesson = await _lessonRepository.GetByIdAsync(lessonId, ct);
         if (lesson is null)
@@ -47,18 +57,21 @@ public sealed class LessonProgressService : ILessonProgressService
 
         var progress = await _lessonProgressRepository.GetAsync(studentId, lessonId, ct);
         if (progress is not null)
-            return progress;
+            return (progress, lesson);
 
         progress = new LessonProgress(Guid.NewGuid(), studentId, lessonId);
         await _lessonProgressRepository.AddAsync(progress, ct);
-        return progress;
+        // Re-fetch after insert: handles race condition where AddAsync swallowed a duplicate
+        // key exception (two concurrent requests) and cleared the tracker.
+        return ((await _lessonProgressRepository.GetAsync(studentId, lessonId, ct))!, lesson);
     }
 
-    private static LessonProgressDto Map(LessonProgress progress)
+    private static LessonProgressDto Map(LessonProgress progress, Lesson lesson)
         => new(
             progress.LessonId,
-            progress.Lesson.Title,
-            progress.Lesson.Course?.Slug,
+            lesson.Title,
+            lesson.Course?.Slug,
+            lesson.Course?.Title,
             progress.IsCompleted,
             progress.CompletedAt,
             progress.LastOpenedAt);

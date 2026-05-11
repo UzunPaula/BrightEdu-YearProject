@@ -2,7 +2,13 @@ using System.Text;
 using BrightEdu.Application.DesignPatterns.Bridge;
 using BrightEdu.Application.DesignPatterns.Decorator;
 using BrightEdu.Application.DesignPatterns.Flyweight;
+using BrightEdu.Application.DesignPatterns.ChainOfResponsibility;
+using BrightEdu.Application.DesignPatterns.Mediator;
+using BrightEdu.Application.DesignPatterns.Observer;
 using BrightEdu.Application.DesignPatterns.Proxy;
+using BrightEdu.Application.DesignPatterns.Strategy;
+using BrightEdu.Application.DesignPatterns.TemplateMethod;
+using BrightEdu.Application.DesignPatterns.Visitor;
 using BrightEdu.Application.Features.Admin;
 using BrightEdu.Application.Features.Auth;
 using BrightEdu.Application.Features.Catalog;
@@ -116,6 +122,7 @@ builder.Services.AddScoped<IAdminLessonRepository, AdminLessonRepository>();
 builder.Services.AddScoped<IAdminQuizRepository, AdminQuizRepository>();
 builder.Services.AddScoped<IAdminQuestionRepository, AdminQuestionRepository>();
 builder.Services.AddScoped<IAdminCourseService, AdminCourseService>();
+builder.Services.AddScoped<IAdminCourseImportService, AdminCourseImportService>();
 builder.Services.AddScoped<IAdminModuleService, AdminModuleService>();
 builder.Services.AddScoped<IAdminLessonService, AdminLessonService>();
 builder.Services.AddScoped<IAdminQuizService, AdminQuizService>();
@@ -142,6 +149,29 @@ builder.Services.AddScoped<IQuizEvaluationService>(sp =>
 builder.Services.AddSingleton<QuestionTypeFactory>();
 builder.Services.AddScoped<QuestionRenderingService>();
 builder.Services.AddScoped<LessonBridgeService>();
+
+// Lab6 — Behavioral Patterns
+// Observer
+builder.Services.AddScoped<IQuizResultObserver, LessonAutoCompleteObserver>();
+// Strategy — scor uniform implicit; poate fi schimbat în WeightedScoringStrategy
+builder.Services.AddScoped<IQuizScoringStrategy, UniformScoringStrategy>();
+builder.Services.AddScoped<QuizScoringContext>();
+// Template Method
+builder.Services.AddScoped<EnrolledStudentLessonAccess>();
+builder.Services.AddScoped<AdminLessonAccess>();
+// Chain of Responsibility — handlere instanțiate per request în StartQuizAttemptService
+// Mediator
+builder.Services.AddScoped<ILessonCompletionMediator>(sp =>
+{
+    var mediator = new LessonCompletionMediator();
+    var progressColleague = new CourseProgressColleague(
+        sp.GetRequiredService<ILessonProgressRepository>(),
+        sp.GetRequiredService<ILessonRepository>(),
+        sp.GetRequiredService<IEnrollmentRepository>());
+    mediator.Register(progressColleague);
+    return mediator;
+});
+// Visitor — instanțiate ad-hoc unde este nevoie (ContentBlockValidationVisitor, ContentBlockStatisticsVisitor)
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

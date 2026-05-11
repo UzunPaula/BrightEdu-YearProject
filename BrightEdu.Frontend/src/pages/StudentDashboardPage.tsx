@@ -95,7 +95,14 @@ export function StudentDashboardPage() {
               <div className="history-list">
                 {dashboard.recentLessons.map((lesson) => (
                   <article key={lesson.lessonId} className="content-block">
-                    <strong>{lesson.lessonTitle}</strong>
+                    {lesson.courseTitle && (
+                      <span className="muted" style={{ fontSize: "0.8rem", fontWeight: 500 }}>
+                        {lesson.courseTitle}
+                      </span>
+                    )}
+                    <strong style={{ display: "block", marginTop: lesson.courseTitle ? "0.2rem" : 0 }}>
+                      {lesson.courseTitle ? `${lesson.courseTitle} / ${lesson.lessonTitle}` : lesson.lessonTitle}
+                    </strong>
                     <p className="muted">
                       {lesson.isCompleted ? t("student.completed") : t("student.inProgress")} |{" "}
                       {t("student.lastOpened")}: {new Date(lesson.lastOpenedAt).toLocaleString()}

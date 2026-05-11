@@ -10,12 +10,53 @@
   --accent-warm: #ffb86c;
   --success: #2e9e6f;
   --shadow: 0 22px 48px rgba(98, 61, 117, 0.14);
+  --card-bg: rgba(255, 255, 255, 0.82);
+  --topbar-bg: rgba(255, 250, 248, 0.82);
+  --input-bg: #ffffff;
+  --input-bg-plain: #f4f7fb;
+  --btn-secondary-bg: #ffffff;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: var(--text);
-  background:
-    radial-gradient(circle at top left, rgba(255, 184, 108, 0.25), transparent 28%),
-    radial-gradient(circle at top right, rgba(144, 70, 207, 0.18), transparent 24%),
-    linear-gradient(180deg, #fffaf8 0%, #fff4f7 50%, #ffffff 100%);
+}
+
+[data-theme="dark"] {
+  --bg: #0f0720;
+  --surface: #1c1030;
+  --surface-soft: #261540;
+  --line: rgba(247, 108, 157, 0.18);
+  --text: #f2eaff;
+  --muted: #c0a0d8;
+  --shadow: 0 22px 48px rgba(0, 0, 0, 0.5);
+  --card-bg: rgba(28, 16, 48, 0.82);
+  --topbar-bg: rgba(15, 7, 32, 0.82);
+  --input-bg: #1c1030;
+  --input-bg-plain: #261540;
+  --btn-secondary-bg: #1c1030;
+}
+
+#vanta-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+}
+
+#vanta-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  backdrop-filter: blur(2px);
+  background: rgba(255, 250, 248, 0.45);
+  transition: background 0.3s;
+}
+
+[data-theme="dark"] #vanta-overlay {
+  background: rgba(15, 7, 32, 0.45);
+}
+
+main.page-shell {
+  position: relative;
+  z-index: 1;
+  overflow-x: hidden;
 }
 
 * {
@@ -26,6 +67,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--bg);
+  transition: background 0.3s, color 0.3s;
 }
 
 a {
@@ -47,8 +90,9 @@ button {
   top: 0;
   z-index: 30;
   backdrop-filter: blur(16px);
-  background: rgba(255, 250, 248, 0.86);
+  background: var(--topbar-bg);
   border-bottom: 1px solid var(--line);
+  transition: background 0.3s;
 }
 
 .topbar-inner {
@@ -98,10 +142,11 @@ button {
 .hero-card,
 .panel,
 .course-card {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   border-radius: 28px;
+  transition: background 0.3s;
 }
 
 .hero-copy {
@@ -132,19 +177,26 @@ button {
 }
 
 .hero-visual {
-  padding: 1.2rem;
+  padding: 0;
   position: relative;
-  overflow: hidden;
+  min-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.hero-visual::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(247, 108, 157, 0.32), transparent 26%),
-    radial-gradient(circle at 80% 30%, rgba(144, 70, 207, 0.28), transparent 30%),
-    linear-gradient(145deg, #fff7f2, #fffdfd);
+.hero-main-img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 500px;
+  display: block;
+  filter: drop-shadow(0 20px 48px rgba(247, 108, 157, 0.22));
+  transition: filter 0.4s ease;
+}
+
+[data-theme="dark"] .hero-main-img {
+  filter: drop-shadow(0 0 0 transparent);
 }
 
 .hero-visual-content {
@@ -190,7 +242,7 @@ button {
 }
 
 .btn-secondary {
-  background: white;
+  background: var(--btn-secondary-bg);
   color: var(--accent-strong);
   border: 1px solid rgba(144, 70, 207, 0.16);
 }
@@ -259,7 +311,7 @@ button {
 }
 
 .form-panel {
-  max-width: 720px;
+  width: 100%;
 }
 
 .field {
@@ -277,7 +329,7 @@ button {
   min-height: 48px;
   border-radius: 16px;
   border: 1px solid var(--line);
-  background: white;
+  background: var(--input-bg);
   padding: 0 1rem;
   font: inherit;
   color: var(--text);
@@ -363,7 +415,7 @@ button {
   width: 100%;
   height: 44px;
   padding: 0 15px;
-  background: #f4f7fb;
+  background: var(--input-bg-plain);
   border: none;
   border-radius: 8px;
   font: inherit;
@@ -539,6 +591,14 @@ select.input {
     grid-template-columns: 1fr;
   }
 
+  .hero-visual {
+    min-height: 300px;
+  }
+
+  .hero-main-img {
+    max-width: 320px;
+  }
+
   .topbar-inner {
     flex-direction: column;
     justify-content: center;
@@ -549,4 +609,100 @@ select.input {
     flex-wrap: wrap;
     justify-content: center;
   }
+}
+
+/* ─── Notebook loading animation ─────────────────────────────────────────────── */
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  z-index: 9999;
+}
+
+/* Animation duration: 4s total loop
+   0–20%   line 1 draws  (0–0.8s)
+   25–45%  line 2 draws  (1–1.8s)
+   50–70%  line 3 draws  (2–2.8s)
+   75–90%  line 4 draws  (3–3.6s)
+   90–100% reset          (3.6–4s) */
+
+.nb-l1 {
+  stroke-dashoffset: 54;
+  animation: nbLine1 4s ease-in-out infinite;
+}
+.nb-l2 {
+  stroke-dashoffset: 54;
+  animation: nbLine2 4s ease-in-out infinite;
+}
+.nb-l3 {
+  stroke-dashoffset: 54;
+  animation: nbLine3 4s ease-in-out infinite;
+}
+.nb-l4 {
+  stroke-dashoffset: 40;
+  animation: nbLine4 4s ease-in-out infinite;
+}
+
+@keyframes nbLine1 {
+  0%   { stroke-dashoffset: 54; }
+  20%  { stroke-dashoffset: 0; }
+  88%  { stroke-dashoffset: 0; opacity: 1; }
+  95%  { stroke-dashoffset: 54; opacity: 0; }
+  100% { stroke-dashoffset: 54; opacity: 0; }
+}
+@keyframes nbLine2 {
+  0%, 24%  { stroke-dashoffset: 54; opacity: 0; }
+  25%      { stroke-dashoffset: 54; opacity: 1; }
+  45%      { stroke-dashoffset: 0; }
+  88%      { stroke-dashoffset: 0; opacity: 1; }
+  95%      { stroke-dashoffset: 54; opacity: 0; }
+  100%     { stroke-dashoffset: 54; opacity: 0; }
+}
+@keyframes nbLine3 {
+  0%, 49%  { stroke-dashoffset: 54; opacity: 0; }
+  50%      { stroke-dashoffset: 54; opacity: 1; }
+  70%      { stroke-dashoffset: 0; }
+  88%      { stroke-dashoffset: 0; opacity: 1; }
+  95%      { stroke-dashoffset: 54; opacity: 0; }
+  100%     { stroke-dashoffset: 54; opacity: 0; }
+}
+@keyframes nbLine4 {
+  0%, 74%  { stroke-dashoffset: 40; opacity: 0; }
+  75%      { stroke-dashoffset: 40; opacity: 1; }
+  90%      { stroke-dashoffset: 0; }
+  92%      { stroke-dashoffset: 0; opacity: 1; }
+  95%      { stroke-dashoffset: 40; opacity: 0; }
+  100%     { stroke-dashoffset: 40; opacity: 0; }
+}
+
+/* Pen: tip at translate origin, moves along each line */
+.nb-pen {
+  animation: nbPenMove 4s ease-in-out infinite;
+}
+
+@keyframes nbPenMove {
+  /* Line 1: x 30→84, y=35 (tip offset -5 from line y=40) */
+  0%   { transform: translate(30px, 35px); opacity: 0; }
+  2%   { transform: translate(30px, 35px); opacity: 1; }
+  20%  { transform: translate(84px, 35px); }
+  /* Jump to line 2 */
+  24%  { transform: translate(30px, 49px); }
+  25%  { transform: translate(30px, 49px); opacity: 1; }
+  45%  { transform: translate(84px, 49px); }
+  /* Jump to line 3 */
+  49%  { transform: translate(30px, 63px); }
+  50%  { transform: translate(30px, 63px); opacity: 1; }
+  70%  { transform: translate(84px, 63px); }
+  /* Jump to line 4 */
+  74%  { transform: translate(30px, 77px); }
+  75%  { transform: translate(30px, 77px); opacity: 1; }
+  90%  { transform: translate(70px, 77px); }
+  /* Fade and reset */
+  92%  { transform: translate(70px, 77px); opacity: 1; }
+  96%  { transform: translate(30px, 35px); opacity: 0; }
+  100% { transform: translate(30px, 35px); opacity: 0; }
 }

@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { brightEduApi } from "../shared/api/brightEduApi";
+import { useAuth } from "../features/auth/AuthContext";
 import { ErrorPanel } from "../shared/components/ErrorPanel";
 import { LoadingPanel } from "../shared/components/LoadingPanel";
 import type { CourseCard } from "../shared/types/api";
 
 export function CoursesPage() {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState<CourseCard[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,6 +29,14 @@ export function CoursesPage() {
     };
     void load();
   }, [i18n.language]);
+
+  const handleOpen = (slug: string) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    navigate(`/courses/${slug}`);
+  };
 
   return (
     <section className="section">
@@ -51,9 +62,9 @@ export function CoursesPage() {
                 {course.shortDescription ?? t("courses.descPlaceholder")}
               </p>
               <div className="actions">
-                <Link className="btn-secondary" to={`/courses/${course.slug}`}>
+                <button className="btn-secondary" onClick={() => handleOpen(course.slug)}>
                   {t("courses.open")}
-                </Link>
+                </button>
               </div>
             </article>
           ))}

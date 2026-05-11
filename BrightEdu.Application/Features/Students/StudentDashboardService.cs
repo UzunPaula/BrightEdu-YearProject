@@ -55,6 +55,7 @@ public sealed class StudentDashboardService : IStudentDashboardService
                 progress.LessonId,
                 progress.Lesson.Title,
                 progress.Lesson.Course?.Slug,
+                progress.Lesson.Course?.Title,
                 progress.IsCompleted,
                 progress.CompletedAt,
                 progress.LastOpenedAt))
