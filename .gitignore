@@ -1,5 +1,41 @@
+# ─── .NET build output ────────────────────────────────────────────────────────
 bin/
 obj/
 /packages/
+artifacts/
+
+# ─── .NET secrets & config ────────────────────────────────────────────────────
+**/appsettings.json
+**/appsettings.*.json
+!**/appsettings.example.json
+
+# ─── User-uploaded files ──────────────────────────────────────────────────────
+BrightEdu.Web/wwwroot/uploads/
+
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+.vs/
+*.user
+*.suo
 riderModule.iml
 /_ReSharper.Caches/
+.vscode/
+
+# ─── Node / Frontend ──────────────────────────────────────────────────────────
+**/node_modules/
+**/dist/
+.env
+.env.local
+.env.*.local
+**/*.tsbuildinfo
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Temp files (editor, tools) ───────────────────────────────────────────────
+*.tmp.*
+*.tmp
+
+# ─── Claude Code ──────────────────────────────────────────────────────────────
+.claude/

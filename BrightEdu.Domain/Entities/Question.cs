@@ -1,58 +1,85 @@
+using BrightEdu.Domain.Enums;
+
 namespace BrightEdu.Domain.Entities;
 
 public class Question
 {
-    // Colecție internă de răspunsuri.
-    // O păstrăm privată pentru a controla adăugarea răspunsurilor doar prin metodă necesară.
     private readonly List<Answer> _answers = new();
-    public Guid Id { get; private set; }
-    public string Text { get; private set; }
+    private readonly List<QuestionTranslation> _translations = new();
 
-    // Cheie străină către quiz-ul din care face parte întrebarea.
-    public Guid QuizId { get; private set; }
+    private Question()
+    {
+    }
 
-    // Proprietate de navigare către quiz.
-    public Quiz Quiz { get; private set; } = null!;
-
-    // Lista răspunsurilor, expusă doar pentru citire.
-    public IReadOnlyCollection<Answer> Answers => _answers.AsReadOnly();
-
-    // Constructor privat necesar pentru EF Core.
-    private Question() { }
-    
-    // Tipul intrebarii din quiz
-    public string Type { get; private set; } = null!;
-    
-    // Constructorul principal pentru crearea unei întrebări valide.
     public Question(Guid id, string text, Guid quizId)
     {
-        if (id == Guid.Empty)
-            throw new ArgumentException("Id invalid.", nameof(id));
-
-        if (quizId == Guid.Empty)
-            throw new ArgumentException("QuizId invalid.", nameof(quizId));
+        if (id == Guid.Empty) throw new ArgumentException("Id invalid.", nameof(id));
+        if (quizId == Guid.Empty) throw new ArgumentException("QuizId invalid.", nameof(quizId));
 
         Id = id;
         QuizId = quizId;
-
-        SetText(text);
+        Order = 1;
+        Points = 1;
+        Type = QuestionType.SingleChoice;
+        ConfigJson = "{}";
+        AddTranslation(LanguageCode.Ro, text, null);
     }
 
-    // Setează textul întrebării cu validare.
-    public void SetText(string text)
+    public Guid Id { get; private set; }
+    public Guid QuizId { get; private set; }
+    public Quiz Quiz { get; private set; } = null!;
+    public int Order { get; private set; }
+    public int Points { get; private set; }
+    public QuestionType Type { get; private set; }
+    public string ConfigJson { get; private set; } = null!;
+
+    public IReadOnlyCollection<Answer> Answers => _answers.AsReadOnly();
+    public IReadOnlyCollection<QuestionTranslation> Translations => _translations.AsReadOnly();
+
+    public string Text => GetTranslation(LanguageCode.Ro)?.Text ?? _translations.FirstOrDefault()?.Text ?? string.Empty;
+
+    public void Configure(QuestionType type, int order, int points, string? configJson = null)
     {
-        if (string.IsNullOrWhiteSpace(text))
-            throw new ArgumentException("Textul întrebării nu poate fi gol.", nameof(text));
+        if (order <= 0) throw new ArgumentOutOfRangeException(nameof(order));
+        if (points <= 0) throw new ArgumentOutOfRangeException(nameof(points));
 
-        Text = text.Trim();
+        Type = type;
+        Order = order;
+        Points = points;
+        ConfigJson = string.IsNullOrWhiteSpace(configJson) ? "{}" : configJson.Trim();
     }
 
-    // Adaugă un răspuns la întrebare.
+    public void AddTranslation(LanguageCode languageCode, string text, string? explanation)
+    {
+        var existing = GetTranslation(languageCode);
+        if (existing is null)
+        {
+            _translations.Add(new QuestionTranslation(Guid.NewGuid(), Id, languageCode, text, explanation));
+        }
+        else
+        {
+            existing.Update(text, explanation);
+        }
+    }
+
     public void AddAnswer(Answer answer)
     {
-        if (answer is null)
-            throw new ArgumentNullException(nameof(answer));
-
+        ArgumentNullException.ThrowIfNull(answer);
         _answers.Add(answer);
     }
+
+    public void ReplaceAnswers(IReadOnlyList<Answer> newAnswers)
+    {
+        _answers.Clear();
+        foreach (var a in newAnswers)
+            _answers.Add(a);
+    }
+
+    public void UpdateText(string text)
+    {
+        AddTranslation(LanguageCode.Ro, text, null);
+    }
+
+    public QuestionTranslation? GetTranslation(LanguageCode languageCode)
+        => _translations.FirstOrDefault(x => x.LanguageCode == languageCode);
 }

@@ -25,7 +25,7 @@ public sealed class QuestionRenderingService
             throw new Exception("Întrebare inexistentă.");
 
         // Luăm tipul partajat
-        var type = _factory.GetQuestionType(question.Type);
+        var type = _factory.GetQuestionType(question.Type.ToString());
 
         // Combinăm datele
         return new RenderedQuestionDto(

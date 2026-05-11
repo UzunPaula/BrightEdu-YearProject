@@ -1,0 +1,1649 @@
+import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { brightEduApi } from "../shared/api/brightEduApi";
+import { ErrorPanel } from "../shared/components/ErrorPanel";
+import { LoadingPanel } from "../shared/components/LoadingPanel";
+import { useToast } from "../shared/components/Toast";
+import { useConfirm } from "../shared/components/ConfirmDialog";
+import { useAuth } from "../features/auth/AuthContext";
+import type {
+  AdminCourse,
+  AdminModule,
+  AdminLesson,
+  AdminQuiz,
+  AdminQuestion,
+  AdminAnswer,
+  AdminMediaAsset,
+  AdminLessonFull,
+  AdminContentBlock,
+  AdminAttachment,
+  CreateCoursePayload,
+  UpdateCoursePayload,
+  CreateModulePayload,
+  UpdateModulePayload,
+  CreateLessonPayload,
+  UpdateLessonPayload,
+  CreateQuizPayload,
+  UpdateQuizPayload,
+  AnswerInputPayload
+} from "../shared/types/api";
+
+type Tab = "courses" | "modules" | "lessons" | "quiz" | "media";
+
+type QuizTarget = { type: "lesson" | "module"; id: string; title: string };
+
+// ─── Shared form shell ────────────────────────────────────────────────────────
+
+function FormShell({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
+  return (
+    <div>
+      <div style={{ marginBottom: "1.5rem" }}>
+        <button className="btn-secondary" style={{ fontSize: "0.85rem", marginBottom: "1rem" }} onClick={onBack}>
+          ← Înapoi
+        </button>
+        <h2 style={{ margin: 0 }}>{title}</h2>
+      </div>
+      <div className="panel form-panel">{children}</div>
+    </div>
+  );
+}
+
+// ─── Courses Tab ──────────────────────────────────────────────────────────────
+
+function CoursesTab({ token, onSelectCourse }: { token: string; onSelectCourse: (c: AdminCourse) => void }) {
+  const toast = useToast();
+  const { confirm, dialogNode } = useConfirm();
+
+  const [courses, setCourses] = useState<AdminCourse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<"list" | "form">("list");
+  const [editing, setEditing] = useState<AdminCourse | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<CreateCoursePayload>({ title: "", shortDescription: "", fullDescription: "", level: "Beginner" });
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setCourses(await brightEduApi.adminGetCourses(token));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Eroare la încărcare.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void load(); }, []);
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm({ title: "", shortDescription: "", fullDescription: "", level: "Beginner" });
+    setView("form");
+  };
+
+  const openEdit = (c: AdminCourse) => {
+    setEditing(c);
+    setForm({ title: c.title, shortDescription: c.shortDescription ?? "", fullDescription: c.fullDescription ?? "", level: c.level });
+    setView("form");
+  };
+
+  const handleSave = async () => {
+    if (!form.title.trim()) return;
+    setSaving(true);
+    try {
+      if (editing) {
+        await brightEduApi.adminUpdateCourse(editing.id, form as UpdateCoursePayload, token);
+        toast.success(`Cursul "${form.title}" a fost actualizat.`);
+      } else {
+        await brightEduApi.adminCreateCourse(form, token);
+        toast.success(`Cursul "${form.title}" a fost creat.`);
+      }
+      setView("list");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la salvare.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePublish = async (id: string, title: string) => {
+    try {
+      await brightEduApi.adminPublishCourse(id, token);
+      toast.success(`Cursul "${title}" a fost publicat.`);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la publicare.");
+    }
+  };
+
+  const handleArchive = async (id: string, title: string) => {
+    if (!await confirm(`Arhivezi cursul "${title}"?`)) return;
+    try {
+      await brightEduApi.adminArchiveCourse(id, token);
+      toast.info(`Cursul "${title}" a fost arhivat.`);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la arhivare.");
+    }
+  };
+
+  if (view === "form") {
+    return (
+      <FormShell title={editing ? `Editează: ${editing.title}` : "Curs nou"} onBack={() => setView("list")}>
+        <div style={{ display: "grid", gap: "1rem" }}>
+          <div>
+            <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Titlu *</label>
+            <input className="input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="ex. C# Backend Foundations" />
+          </div>
+          <div>
+            <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Nivel</label>
+            <select className="input" value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value }))}>
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
+          </div>
+          <div>
+            <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Descriere scurtă</label>
+            <input className="input" value={form.shortDescription ?? ""} onChange={e => setForm(f => ({ ...f, shortDescription: e.target.value }))} placeholder="Rezumat în 1-2 propoziții" />
+          </div>
+          <div>
+            <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Descriere completă</label>
+            <textarea className="input" rows={4} value={form.fullDescription ?? ""} onChange={e => setForm(f => ({ ...f, fullDescription: e.target.value }))} placeholder="Descriere detaliată a cursului" />
+          </div>
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem" }}>
+            <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? "Se salvează..." : "Salvează"}</button>
+            <button className="btn-secondary" onClick={() => setView("list")}>Anulează</button>
+          </div>
+        </div>
+      </FormShell>
+    );
+  }
+
+  if (loading) return <LoadingPanel message="Încărcăm cursurile..." />;
+  if (error) return <ErrorPanel message={error} />;
+
+  return (
+    <div>
+      {dialogNode}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <h2 style={{ margin: 0 }}>Cursuri ({courses.length})</h2>
+        <button className="btn-primary" onClick={openCreate}>+ Curs nou</button>
+      </div>
+
+      {courses.length === 0 ? (
+        <p className="muted">Nu există cursuri încă.</p>
+      ) : (
+        <div style={{ display: "grid", gap: "1rem" }}>
+          {courses.map(c => (
+            <article key={c.id} className="panel" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+              <div>
+                <div className="pill-row" style={{ marginBottom: "0.5rem" }}>
+                  <span className="pill">{c.level}</span>
+                  <span className={`pill ${c.state === "Published" ? "pill-green" : c.state === "Archived" ? "pill-red" : ""}`}>{c.state}</span>
+                </div>
+                <h3 style={{ margin: "0 0 0.25rem" }}>{c.title}</h3>
+                {c.shortDescription && <p className="muted" style={{ margin: "0 0 0.5rem", fontSize: "0.875rem" }}>{c.shortDescription}</p>}
+                <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>
+                  {c.moduleCount} module · {c.lessonCount} lecții · creat {new Date(c.createdAt).toLocaleDateString("ro-RO")}
+                </p>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", minWidth: "max-content" }}>
+                <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => onSelectCourse(c)}>→ Module</button>
+                <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => openEdit(c)}>Editează</button>
+                {c.state !== "Published" && (
+                  <button className="btn-primary" style={{ fontSize: "0.8rem" }} onClick={() => handlePublish(c.id, c.title)}>Publică</button>
+                )}
+                {c.state === "Published" && (
+                  <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => handleArchive(c.id, c.title)}>Arhivează</button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Modules Tab ──────────────────────────────────────────────────────────────
+
+function ModulesTab({
+  token,
+  course,
+  onSelectModule,
+  onSelectQuiz,
+  onModulesChanged
+}: {
+  token: string;
+  course: AdminCourse;
+  onSelectModule: (m: AdminModule) => void;
+  onSelectQuiz: (target: QuizTarget) => void;
+  onModulesChanged: () => void;
+}) {
+  const toast = useToast();
+  const { confirm, dialogNode } = useConfirm();
+
+  const [modules, setModules] = useState<AdminModule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<"list" | "form">("list");
+  const [editing, setEditing] = useState<AdminModule | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<{ title: string; description: string; order: number }>({ title: "", description: "", order: 1 });
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setModules(await brightEduApi.adminGetModules(course.id, token));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Eroare la încărcare.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void load(); }, [course.id]);
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm({ title: "", description: "", order: (modules.length || 0) + 1 });
+    setView("form");
+  };
+
+  const openEdit = (m: AdminModule) => {
+    setEditing(m);
+    setForm({ title: m.title, description: m.description ?? "", order: m.order });
+    setView("form");
+  };
+
+  const handleSave = async () => {
+    if (!form.title.trim()) return;
+    setSaving(true);
+    try {
+      if (editing) {
+        const payload: UpdateModulePayload = { title: form.title, description: form.description || undefined, order: form.order };
+        await brightEduApi.adminUpdateModule(editing.id, payload, token);
+        toast.success(`Modulul "${form.title}" a fost actualizat.`);
+      } else {
+        const payload: CreateModulePayload = { courseId: course.id, title: form.title, description: form.description || undefined, order: form.order };
+        await brightEduApi.adminCreateModule(course.id, payload, token);
+        toast.success(`Modulul "${form.title}" a fost creat.`);
+      }
+      setView("list");
+      await load();
+      onModulesChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la salvare.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!await confirm(`Ștergi modulul "${title}"? Lecțiile din el vor rămâne neassigned.`)) return;
+    try {
+      await brightEduApi.adminDeleteModule(id, token);
+      toast.info(`Modulul "${title}" a fost șters.`);
+      await load();
+      onModulesChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la ștergere.");
+    }
+  };
+
+  if (view === "form") {
+    return (
+      <FormShell title={editing ? `Editează modul: ${editing.title}` : "Modul nou"} onBack={() => setView("list")}>
+        <div style={{ display: "grid", gap: "1rem" }}>
+          <div>
+            <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Titlu *</label>
+            <input className="input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="ex. Introducere în API design" />
+          </div>
+          <div>
+            <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Descriere</label>
+            <textarea className="input" rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Scurtă descriere a modulului" />
+          </div>
+          <div>
+            <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Ordine</label>
+            <input className="input" type="number" min={1} value={form.order} onChange={e => setForm(f => ({ ...f, order: Number(e.target.value) }))} />
+          </div>
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem" }}>
+            <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? "Se salvează..." : "Salvează"}</button>
+            <button className="btn-secondary" onClick={() => setView("list")}>Anulează</button>
+          </div>
+        </div>
+      </FormShell>
+    );
+  }
+
+  if (loading) return <LoadingPanel message="Încărcăm modulele..." />;
+  if (error) return <ErrorPanel message={error} />;
+
+  return (
+    <div>
+      {dialogNode}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <h2 style={{ margin: 0 }}>Module — {course.title}</h2>
+        <button className="btn-primary" onClick={openCreate}>+ Modul nou</button>
+      </div>
+
+      {modules.length === 0 ? (
+        <p className="muted">Nu există module pentru acest curs.</p>
+      ) : (
+        <div style={{ display: "grid", gap: "0.75rem" }}>
+          {modules.map(m => (
+            <article key={m.id} className="panel" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
+              <div>
+                <span className="muted" style={{ fontSize: "0.8rem" }}>#{m.order}</span>
+                <h4 style={{ margin: "0.25rem 0" }}>{m.title}</h4>
+                {m.description && <p className="muted" style={{ margin: 0, fontSize: "0.875rem" }}>{m.description}</p>}
+                <p className="muted" style={{ margin: "0.25rem 0 0", fontSize: "0.8rem" }}>{m.lessonCount} lecții · {m.state}</p>
+              </div>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => onSelectModule(m)}>→ Lecții</button>
+                <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => onSelectQuiz({ type: "module", id: m.id, title: m.title })}>Quiz</button>
+                <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => openEdit(m)}>Editează</button>
+                <button className="btn-danger" style={{ fontSize: "0.8rem", minHeight: "36px", padding: "0 0.85rem" }} onClick={() => handleDelete(m.id, m.title)}>Șterge</button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Lessons Tab ──────────────────────────────────────────────────────────────
+
+function LessonsTab({
+  token,
+  course,
+  module,
+  onSelectQuiz
+}: {
+  token: string;
+  course: AdminCourse;
+  module: AdminModule;
+  onSelectQuiz: (target: QuizTarget) => void;
+}) {
+  const toast = useToast();
+  const { confirm, dialogNode } = useConfirm();
+
+  const [lessons, setLessons] = useState<AdminLesson[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<"list" | "form" | "content">("list");
+  const [editing, setEditing] = useState<AdminLesson | null>(null);
+  const [contentLessonId, setContentLessonId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<CreateLessonPayload & { codeEditorEnabled: boolean }>({
+    courseId: course.id, moduleId: module.id, order: 1, title: "", summary: "", estimatedMinutes: 15, codeEditorEnabled: false
+  });
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      const all = await brightEduApi.adminGetLessons(course.id, token);
+      setLessons(all.filter(l => l.moduleId === module.id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Eroare la încărcare.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+    setView("list");
+  }, [course.id, module.id]);
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm({ courseId: course.id, moduleId: module.id, order: (lessons.length || 0) + 1, title: "", summary: "", estimatedMinutes: 15, codeEditorEnabled: false });
+    setView("form");
+  };
+
+  const openEdit = (l: AdminLesson) => {
+    setEditing(l);
+    setForm({ courseId: course.id, moduleId: l.moduleId, order: l.order, title: l.title, summary: l.summary, estimatedMinutes: l.estimatedMinutes, codeEditorEnabled: l.codeEditorEnabled });
+    setView("form");
+  };
+
+  const handleSave = async () => {
+    if (!form.title.trim()) return;
+    setSaving(true);
+    try {
+      if (editing) {
+        const payload: UpdateLessonPayload = { title: form.title, summary: form.summary, order: form.order, estimatedMinutes: form.estimatedMinutes, codeEditorEnabled: form.codeEditorEnabled };
+        await brightEduApi.adminUpdateLesson(editing.id, payload, token);
+        toast.success(`Lecția "${form.title}" a fost actualizată.`);
+      } else {
+        await brightEduApi.adminCreateLesson(course.id, form, token);
+        toast.success(`Lecția "${form.title}" a fost creată.`);
+      }
+      setView("list");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la salvare.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!await confirm(`Ștergi lecția "${title}"?`)) return;
+    try {
+      await brightEduApi.adminDeleteLesson(id, token);
+      toast.info(`Lecția "${title}" a fost ștearsă.`);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la ștergere.");
+    }
+  };
+
+  const handlePublish = async (id: string, title: string) => {
+    try {
+      await brightEduApi.adminPublishLesson(id, token);
+      toast.success(`Lecția "${title}" a fost publicată.`);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la publicare.");
+    }
+  };
+
+  if (view === "content" && contentLessonId) {
+    return (
+      <LessonContentEditor
+        token={token}
+        lessonId={contentLessonId}
+        onDone={() => { setView("list"); setContentLessonId(null); }}
+      />
+    );
+  }
+
+  if (view === "form") {
+    return (
+      <FormShell title={editing ? `Editează lecție: ${editing.title}` : "Lecție nouă"} onBack={() => setView("list")}>
+        <div style={{ display: "grid", gap: "1rem" }}>
+          <div>
+            <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Titlu *</label>
+            <input className="input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="ex. Ce este un Web API?" />
+          </div>
+          <div>
+            <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Rezumat</label>
+            <textarea className="input" rows={3} value={form.summary} onChange={e => setForm(f => ({ ...f, summary: e.target.value }))} placeholder="Scurtă descriere a lecției" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <div>
+              <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Ordine</label>
+              <input className="input" type="number" min={1} value={form.order} onChange={e => setForm(f => ({ ...f, order: Number(e.target.value) }))} />
+            </div>
+            <div>
+              <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Durata estimată (min)</label>
+              <input className="input" type="number" min={1} value={form.estimatedMinutes} onChange={e => setForm(f => ({ ...f, estimatedMinutes: Number(e.target.value) }))} />
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+            <input type="checkbox" id="codeEditor" checked={form.codeEditorEnabled} onChange={e => setForm(f => ({ ...f, codeEditorEnabled: e.target.checked }))} />
+            <label htmlFor="codeEditor" className="muted">Activează code editor</label>
+          </div>
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem" }}>
+            <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? "Se salvează..." : "Salvează"}</button>
+            <button className="btn-secondary" onClick={() => setView("list")}>Anulează</button>
+          </div>
+        </div>
+      </FormShell>
+    );
+  }
+
+  if (loading) return <LoadingPanel message="Încărcăm lecțiile..." />;
+  if (error) return <ErrorPanel message={error} />;
+
+  return (
+    <div>
+      {dialogNode}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <div>
+          <h2 style={{ margin: "0 0 0.2rem" }}>Lecții — {module.title}</h2>
+          <p className="muted" style={{ margin: 0, fontSize: "0.85rem" }}>{course.title}</p>
+        </div>
+        <button className="btn-primary" onClick={openCreate}>+ Lecție nouă</button>
+      </div>
+
+      {lessons.length === 0 ? (
+        <p className="muted">Nu există lecții în acest modul.</p>
+      ) : (
+        <div style={{ display: "grid", gap: "0.75rem" }}>
+          {lessons.map(l => (
+            <article key={l.id} className="panel" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+              <div>
+                <div className="pill-row" style={{ marginBottom: "0.4rem" }}>
+                  <span className="pill">#{l.order}</span>
+                  <span className={`pill ${l.state === "Published" ? "pill-green" : ""}`}>{l.state}</span>
+                  {l.hasQuiz && <span className="pill">Quiz</span>}
+                  {l.codeEditorEnabled && <span className="pill">Code</span>}
+                </div>
+                <h4 style={{ margin: "0 0 0.25rem" }}>{l.title}</h4>
+                {l.summary && <p className="muted" style={{ margin: 0, fontSize: "0.875rem" }}>{l.summary}</p>}
+                <p className="muted" style={{ margin: "0.25rem 0 0", fontSize: "0.8rem" }}>{l.estimatedMinutes} min</p>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", minWidth: "max-content" }}>
+                <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => onSelectQuiz({ type: "lesson", id: l.id, title: l.title })}>Quiz</button>
+                <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => openEdit(l)}>Editează</button>
+                {l.state !== "Published" && (
+                  <button className="btn-primary" style={{ fontSize: "0.8rem" }} onClick={() => handlePublish(l.id, l.title)}>Publică</button>
+                )}
+                <button className="btn-danger" style={{ fontSize: "0.8rem", minHeight: "36px", padding: "0 0.85rem" }} onClick={() => handleDelete(l.id, l.title)}>Șterge</button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Media Picker Modal ───────────────────────────────────────────────────────
+
+function MediaPicker({
+  token,
+  onSelect,
+  onClose,
+  filter
+}: {
+  token: string;
+  onSelect: (asset: AdminMediaAsset) => void;
+  onClose: () => void;
+  filter?: "image" | "pdf" | "video";
+}) {
+  const [assets, setAssets] = useState<AdminMediaAsset[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    brightEduApi.adminGetMedia(token)
+      .then(all => {
+        const filtered = filter
+          ? all.filter(a =>
+              filter === "image" ? a.mimeType.startsWith("image/") :
+              filter === "pdf" ? a.mimeType === "application/pdf" :
+              a.mimeType.startsWith("video/"))
+          : all;
+        setAssets(filtered);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const API_BASE_PICKER = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5164";
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 1000,
+      background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center"
+    }}>
+      <div style={{
+        background: "var(--surface, #fff)", borderRadius: 20, padding: "1.5rem",
+        width: "min(90vw, 680px)", maxHeight: "80vh", display: "flex", flexDirection: "column", gap: "1rem"
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h3 style={{ margin: 0 }}>Alege fișier{filter ? ` (${filter})` : ""}</h3>
+          <button className="btn-secondary" style={{ fontSize: "0.85rem" }} onClick={onClose}>Închide</button>
+        </div>
+        {loading ? (
+          <p className="muted">Se încarcă...</p>
+        ) : assets.length === 0 ? (
+          <p className="muted">Nu există fișiere{filter ? ` de tip ${filter}` : ""}. Încarcă din tab-ul Media.</p>
+        ) : (
+          <div style={{ overflowY: "auto", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "0.75rem" }}>
+            {assets.map(asset => (
+              <button
+                key={asset.id}
+                onClick={() => onSelect(asset)}
+                style={{
+                  background: "var(--surface-soft)", border: "2px solid var(--line)",
+                  borderRadius: 12, padding: "0.5rem", cursor: "pointer", textAlign: "left",
+                  display: "flex", flexDirection: "column", gap: "0.4rem"
+                }}
+              >
+                <div style={{ height: 80, borderRadius: 8, overflow: "hidden", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {asset.mimeType.startsWith("image/") ? (
+                    <img src={`${API_BASE_PICKER}${asset.url}`} alt={asset.fileName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: "2rem" }}>{asset.mimeType === "application/pdf" ? "📄" : "🎬"}</span>
+                  )}
+                </div>
+                <span style={{ fontSize: "0.75rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={asset.fileName}>
+                  {asset.fileName}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Lesson Content Editor ────────────────────────────────────────────────────
+
+type LocalBlock = {
+  id: string;
+  blockType: string;
+  order: number;
+  configJson: string;
+};
+
+function buildConfigJson(blockType: string, fields: Record<string, string>): string {
+  if (blockType === "Text") return JSON.stringify({ content: fields.content ?? "" });
+  if (blockType === "Image") return JSON.stringify({ url: fields.url ?? "", alt: fields.alt ?? "" });
+  if (blockType === "Video") return JSON.stringify({ title: fields.title ?? "", url: fields.url ?? "" });
+  if (blockType === "PdfEmbed") return JSON.stringify({ title: fields.title ?? "", url: fields.url ?? "" });
+  if (blockType === "CodeEditor") return JSON.stringify({ language: fields.language ?? "javascript", starterCode: fields.starterCode ?? "" });
+  return "{}";
+}
+
+function parseConfigJson(configJson: string): Record<string, string> {
+  try { return JSON.parse(configJson) as Record<string, string>; }
+  catch { return {}; }
+}
+
+function BlockEditor({ block, onChange, onRemove, onMoveUp, onMoveDown, isFirst, isLast, token }: {
+  block: LocalBlock;
+  onChange: (updated: LocalBlock) => void;
+  onRemove: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  isFirst: boolean;
+  isLast: boolean;
+  token: string;
+}) {
+  const fields = parseConfigJson(block.configJson);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const API_B = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5164";
+
+  const update = (key: string, value: string) => {
+    const updated = { ...fields, [key]: value };
+    onChange({ ...block, configJson: buildConfigJson(block.blockType, updated) });
+  };
+
+  const pickerFilter = block.blockType === "Image" ? "image" as const
+    : block.blockType === "PdfEmbed" ? "pdf" as const
+    : block.blockType === "Video" ? "video" as const
+    : undefined;
+
+  return (
+    <div className="panel" style={{ padding: "0.85rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span className="pill">{block.blockType}</span>
+        <div style={{ display: "flex", gap: "0.4rem" }}>
+          {!isFirst && <button className="btn-secondary" style={{ fontSize: "0.75rem", padding: "0 0.5rem", minHeight: 30 }} onClick={onMoveUp}>↑</button>}
+          {!isLast && <button className="btn-secondary" style={{ fontSize: "0.75rem", padding: "0 0.5rem", minHeight: 30 }} onClick={onMoveDown}>↓</button>}
+          <button className="btn-danger" style={{ fontSize: "0.75rem", padding: "0 0.6rem", minHeight: 30 }} onClick={onRemove}>✕</button>
+        </div>
+      </div>
+
+      {block.blockType === "Text" && (
+        <textarea className="input" rows={4} value={fields.content ?? ""} onChange={e => update("content", e.target.value)} placeholder="Conținut text..." />
+      )}
+
+      {(block.blockType === "Image" || block.blockType === "Video" || block.blockType === "PdfEmbed") && (
+        <>
+          {block.blockType !== "Image" && (
+            <input className="input" value={fields.title ?? ""} onChange={e => update("title", e.target.value)} placeholder="Titlu" />
+          )}
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <input className="input" style={{ flex: 1 }} value={fields.url ?? ""} onChange={e => update("url", e.target.value)} placeholder="URL fișier" />
+            <button className="btn-secondary" style={{ fontSize: "0.8rem", whiteSpace: "nowrap" }} onClick={() => setPickerOpen(true)}>
+              Alege din Media
+            </button>
+          </div>
+          {fields.url && block.blockType === "Image" && (
+            <img src={`${API_B}${fields.url}`} alt="" style={{ maxHeight: 120, borderRadius: 8, objectFit: "contain" }} />
+          )}
+          {block.blockType === "Image" && (
+            <input className="input" value={fields.alt ?? ""} onChange={e => update("alt", e.target.value)} placeholder="Text alternativ (alt)" />
+          )}
+        </>
+      )}
+
+      {block.blockType === "CodeEditor" && (
+        <>
+          <select className="input" value={fields.language ?? "javascript"} onChange={e => update("language", e.target.value)}>
+            <option value="javascript">JavaScript</option>
+            <option value="typescript">TypeScript</option>
+            <option value="csharp">C#</option>
+            <option value="python">Python</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+          </select>
+          <textarea className="input" rows={4} value={fields.starterCode ?? ""} onChange={e => update("starterCode", e.target.value)} placeholder="Cod starter..." style={{ fontFamily: "monospace" }} />
+        </>
+      )}
+
+      {pickerOpen && (
+        <MediaPicker
+          token={token}
+          filter={pickerFilter}
+          onSelect={asset => {
+            update("url", asset.url);
+            setPickerOpen(false);
+          }}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function LessonContentEditor({ token, lessonId, onDone }: {
+  token: string;
+  lessonId: string;
+  onDone: () => void;
+}) {
+  const toast = useToast();
+  const { confirm, dialogNode } = useConfirm();
+  const [lesson, setLesson] = useState<AdminLessonFull | null>(null);
+  const [blocks, setBlocks] = useState<LocalBlock[]>([]);
+  const [attachments, setAttachments] = useState<AdminAttachment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [pickerForAttachment, setPickerForAttachment] = useState(false);
+  const [attachDisplayName, setAttachDisplayName] = useState("");
+  const [selectedAsset, setSelectedAsset] = useState<AdminMediaAsset | null>(null);
+  const API_B = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5164";
+
+  useEffect(() => {
+    brightEduApi.adminGetLessonFull(lessonId, token)
+      .then(data => {
+        setLesson(data);
+        setBlocks(data.contentBlocks.map(b => ({ ...b })));
+        setAttachments(data.attachments.map(a => ({ ...a })));
+      })
+      .catch(e => toast.error(e instanceof Error ? e.message : "Eroare la încărcare."))
+      .finally(() => setLoading(false));
+  }, [lessonId]);
+
+  const addBlock = (blockType: string) => {
+    const newOrder = blocks.length + 1;
+    const defaults: Record<string, string> = {};
+    const configJson = buildConfigJson(blockType, defaults);
+    const newBlock: LocalBlock = { id: crypto.randomUUID(), blockType, order: newOrder, configJson };
+    setBlocks(prev => [...prev, newBlock]);
+  };
+
+  const updateBlock = (idx: number, updated: LocalBlock) => {
+    setBlocks(prev => prev.map((b, i) => i === idx ? updated : b));
+  };
+
+  const removeBlock = (idx: number) => {
+    setBlocks(prev => prev.filter((_, i) => i !== idx).map((b, i) => ({ ...b, order: i + 1 })));
+  };
+
+  const moveBlock = (idx: number, direction: -1 | 1) => {
+    setBlocks(prev => {
+      const arr = [...prev];
+      const target = idx + direction;
+      if (target < 0 || target >= arr.length) return prev;
+      [arr[idx], arr[target]] = [arr[target], arr[idx]];
+      return arr.map((b, i) => ({ ...b, order: i + 1 }));
+    });
+  };
+
+  const saveBlocks = async () => {
+    setSaving(true);
+    try {
+      await brightEduApi.adminSetContentBlocks(lessonId, { blocks: blocks.map(b => ({ blockType: b.blockType, order: b.order, configJson: b.configJson })) }, token);
+      toast.success("Conținut salvat.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la salvare.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddAttachment = async () => {
+    if (!selectedAsset || !attachDisplayName.trim()) return;
+    try {
+      const att = await brightEduApi.adminAddAttachment(lessonId, { mediaAssetId: selectedAsset.id, displayName: attachDisplayName.trim() }, token);
+      setAttachments(prev => [...prev, { ...att, url: selectedAsset.url }]);
+      setSelectedAsset(null);
+      setAttachDisplayName("");
+      toast.success("Atașament adăugat.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la adăugare.");
+    }
+  };
+
+  const handleRemoveAttachment = async (att: AdminAttachment) => {
+    if (!await confirm(`Ștergi atașamentul "${att.displayName}"?`)) return;
+    try {
+      await brightEduApi.adminRemoveAttachment(lessonId, att.id, token);
+      setAttachments(prev => prev.filter(a => a.id !== att.id));
+      toast.success("Atașament șters.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la ștergere.");
+    }
+  };
+
+  if (loading) return <LoadingPanel message="Se încarcă conținutul lecției..." />;
+  if (!lesson) return <p className="muted">Lecția nu a fost găsită.</p>;
+
+  return (
+    <FormShell title={`Conținut lecție: ${lesson.title}`} onBack={onDone}>
+      {dialogNode}
+      <div style={{ display: "grid", gap: "1.5rem" }}>
+
+        {/* Content Blocks */}
+        <section>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+            <h3 style={{ margin: 0 }}>Blocuri de conținut</h3>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              {(["Text", "Image", "Video", "PdfEmbed", "CodeEditor"] as const).map(bt => (
+                <button key={bt} className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => addBlock(bt)}>
+                  + {bt}
+                </button>
+              ))}
+            </div>
+          </div>
+          {blocks.length === 0 ? (
+            <p className="muted">Niciun bloc adăugat. Apasă un buton de mai sus.</p>
+          ) : (
+            <div style={{ display: "grid", gap: "0.75rem" }}>
+              {blocks.map((b, idx) => (
+                <BlockEditor
+                  key={b.id}
+                  block={b}
+                  token={token}
+                  isFirst={idx === 0}
+                  isLast={idx === blocks.length - 1}
+                  onChange={updated => updateBlock(idx, updated)}
+                  onRemove={() => removeBlock(idx)}
+                  onMoveUp={() => moveBlock(idx, -1)}
+                  onMoveDown={() => moveBlock(idx, 1)}
+                />
+              ))}
+            </div>
+          )}
+          <div style={{ marginTop: "1rem" }}>
+            <button className="btn-primary" onClick={saveBlocks} disabled={saving}>
+              {saving ? "Se salvează..." : "Salvează conținut"}
+            </button>
+          </div>
+        </section>
+
+        <hr style={{ border: "none", borderTop: "1px solid var(--line)" }} />
+
+        {/* Attachments */}
+        <section>
+          <h3 style={{ margin: "0 0 0.75rem" }}>Atașamente</h3>
+          {attachments.length === 0 ? (
+            <p className="muted" style={{ marginBottom: "0.75rem" }}>Niciun atașament.</p>
+          ) : (
+            <div style={{ display: "grid", gap: "0.5rem", marginBottom: "1rem" }}>
+              {attachments.map(att => (
+                <div key={att.id} className="panel" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.85rem" }}>
+                  <div>
+                    <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{att.displayName}</span>
+                    <span className="muted" style={{ fontSize: "0.8rem", marginLeft: "0.75rem" }}>
+                      <a href={`${API_B}${att.url}`} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{att.url}</a>
+                    </span>
+                  </div>
+                  <button className="btn-danger" style={{ fontSize: "0.8rem", padding: "0 0.75rem", minHeight: 30 }} onClick={() => void handleRemoveAttachment(att)}>
+                    Șterge
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="panel" style={{ padding: "0.85rem", display: "grid", gap: "0.6rem" }}>
+            <p style={{ margin: 0, fontWeight: 600, fontSize: "0.9rem" }}>Adaugă atașament</p>
+            <input className="input" value={attachDisplayName} onChange={e => setAttachDisplayName(e.target.value)} placeholder="Nume afișat (ex. Suport curs PDF)" />
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <span className="muted" style={{ fontSize: "0.85rem", flex: 1 }}>
+                {selectedAsset ? selectedAsset.fileName : "Niciun fișier selectat"}
+              </span>
+              <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => setPickerForAttachment(true)}>
+                Alege din Media
+              </button>
+              <button className="btn-primary" style={{ fontSize: "0.8rem" }} onClick={() => void handleAddAttachment()} disabled={!selectedAsset || !attachDisplayName.trim()}>
+                Adaugă
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {pickerForAttachment && (
+        <MediaPicker
+          token={token}
+          onSelect={asset => {
+            setSelectedAsset(asset);
+            if (!attachDisplayName.trim()) setAttachDisplayName(asset.fileName);
+            setPickerForAttachment(false);
+          }}
+          onClose={() => setPickerForAttachment(false)}
+        />
+      )}
+    </FormShell>
+  );
+}
+
+// ─── Question Form ────────────────────────────────────────────────────────────
+
+type QuestionFormData = {
+  text: string;
+  type: string;
+  order: number;
+  points: number;
+  answers: AnswerInputPayload[];
+};
+
+function QuestionForm({
+  initial,
+  nextOrder,
+  onSave,
+  onCancel,
+  saving
+}: {
+  initial: QuestionFormData | null;
+  nextOrder: number;
+  onSave: (data: QuestionFormData) => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState<QuestionFormData>(
+    initial ?? { text: "", type: "SingleChoice", order: nextOrder, points: 1, answers: [{ text: "", isCorrect: false, order: 1 }, { text: "", isCorrect: false, order: 2 }] }
+  );
+
+  const addAnswer = () => {
+    if (form.answers.length >= 6) return;
+    setForm(f => ({ ...f, answers: [...f.answers, { text: "", isCorrect: false, order: f.answers.length + 1 }] }));
+  };
+
+  const removeAnswer = (idx: number) => {
+    if (form.answers.length <= 2) return;
+    setForm(f => {
+      const updated = f.answers.filter((_, i) => i !== idx).map((a, i) => ({ ...a, order: i + 1 }));
+      return { ...f, answers: updated };
+    });
+  };
+
+  const updateAnswer = (idx: number, field: keyof AnswerInputPayload, value: string | boolean | number) => {
+    setForm(f => {
+      const updated = f.answers.map((a, i) => i === idx ? { ...a, [field]: value } : a);
+      return { ...f, answers: updated };
+    });
+  };
+
+  return (
+    <div style={{ display: "grid", gap: "1rem" }}>
+      <div>
+        <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Textul întrebării *</label>
+        <textarea className="input" rows={3} value={form.text} onChange={e => setForm(f => ({ ...f, text: e.target.value }))} placeholder="ex. Care este diferența dintre GET și POST?" />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
+        <div>
+          <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Tip</label>
+          <select className="input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
+            <option value="SingleChoice">SingleChoice</option>
+            <option value="MultipleChoice">MultipleChoice</option>
+          </select>
+        </div>
+        <div>
+          <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Ordine</label>
+          <input className="input" type="number" min={1} value={form.order} onChange={e => setForm(f => ({ ...f, order: Number(e.target.value) }))} />
+        </div>
+        <div>
+          <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Puncte</label>
+          <input className="input" type="number" min={1} value={form.points} onChange={e => setForm(f => ({ ...f, points: Number(e.target.value) }))} />
+        </div>
+      </div>
+
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+          <label className="muted" style={{ fontWeight: 600 }}>Răspunsuri ({form.answers.length}/6)</label>
+          {form.answers.length < 6 && (
+            <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={addAnswer}>+ Adaugă răspuns</button>
+          )}
+        </div>
+        <div style={{ display: "grid", gap: "0.5rem" }}>
+          {form.answers.map((a, idx) => (
+            <div key={idx} style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <input
+                className="input"
+                style={{ flex: 1 }}
+                value={a.text}
+                onChange={e => updateAnswer(idx, "text", e.target.value)}
+                placeholder={`Răspuns ${idx + 1}`}
+              />
+              <label style={{ display: "flex", alignItems: "center", gap: "0.3rem", whiteSpace: "nowrap", fontSize: "0.85rem" }}>
+                <input type="checkbox" checked={a.isCorrect} onChange={e => updateAnswer(idx, "isCorrect", e.target.checked)} />
+                Corect
+              </label>
+              {form.answers.length > 2 && (
+                <button className="btn-danger" style={{ fontSize: "0.75rem", padding: "0 0.6rem", minHeight: "34px" }} onClick={() => removeAnswer(idx)}>✕</button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem" }}>
+        <button className="btn-primary" onClick={() => onSave(form)} disabled={saving}>{saving ? "Se salvează..." : "Salvează întrebarea"}</button>
+        <button className="btn-secondary" onClick={onCancel}>Anulează</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Quiz Tab ─────────────────────────────────────────────────────────────────
+
+function QuizTab({ token, target }: { token: string; target: QuizTarget }) {
+  const toast = useToast();
+  const { confirm, dialogNode } = useConfirm();
+
+  const [quiz, setQuiz] = useState<AdminQuiz | null>(null);
+  const [questions, setQuestions] = useState<AdminQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<"list" | "form" | "question-form">("list");
+  const [editingQuestion, setEditingQuestion] = useState<AdminQuestion | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [quizForm, setQuizForm] = useState<{ title: string; passingScore: number; maxAttempts: number; shuffleQuestions: boolean; shuffleAnswers: boolean }>({
+    title: "", passingScore: 60, maxAttempts: 3, shuffleQuestions: false, shuffleAnswers: false
+  });
+
+  const loadQuiz = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      let loaded: AdminQuiz | null = null;
+      try {
+        loaded = target.type === "lesson"
+          ? await brightEduApi.adminGetLessonQuiz(target.id, token)
+          : await brightEduApi.adminGetModuleQuiz(target.id, token);
+      } catch {
+        loaded = null;
+      }
+      setQuiz(loaded);
+      if (loaded) {
+        setQuizForm({ title: loaded.title, passingScore: loaded.passingScore, maxAttempts: loaded.maxAttempts, shuffleQuestions: loaded.shuffleQuestions, shuffleAnswers: loaded.shuffleAnswers });
+        const qs = await brightEduApi.adminGetQuestions(loaded.id, token);
+        setQuestions(qs);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Eroare la încărcare.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void loadQuiz(); }, [target.type, target.id]);
+
+  const handleCreateQuiz = async () => {
+    if (!quizForm.title.trim()) return;
+    setSaving(true);
+    try {
+      const payload: CreateQuizPayload = {
+        title: quizForm.title,
+        passingScore: quizForm.passingScore,
+        maxAttempts: quizForm.maxAttempts,
+        shuffleQuestions: quizForm.shuffleQuestions,
+        shuffleAnswers: quizForm.shuffleAnswers
+      };
+      if (target.type === "lesson") {
+        await brightEduApi.adminCreateLessonQuiz(target.id, payload, token);
+      } else {
+        await brightEduApi.adminCreateModuleQuiz(target.id, payload, token);
+      }
+      toast.success("Quiz creat cu succes.");
+      setView("list");
+      await loadQuiz();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la creare.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateQuiz = async () => {
+    if (!quiz || !quizForm.title.trim()) return;
+    setSaving(true);
+    try {
+      const payload: UpdateQuizPayload = {
+        title: quizForm.title,
+        passingScore: quizForm.passingScore,
+        maxAttempts: quizForm.maxAttempts,
+        shuffleQuestions: quizForm.shuffleQuestions,
+        shuffleAnswers: quizForm.shuffleAnswers
+      };
+      await brightEduApi.adminUpdateQuiz(quiz.id, payload, token);
+      toast.success("Quiz actualizat.");
+      setView("list");
+      await loadQuiz();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la salvare.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteQuiz = async () => {
+    if (!quiz) return;
+    if (!await confirm(`Ștergi quiz-ul "${quiz.title}"? Toate întrebările vor fi șterse.`)) return;
+    try {
+      await brightEduApi.adminDeleteQuiz(quiz.id, token);
+      toast.info("Quiz șters.");
+      setQuiz(null);
+      setQuestions([]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la ștergere.");
+    }
+  };
+
+  const handlePublishQuiz = async () => {
+    if (!quiz) return;
+    try {
+      await brightEduApi.adminPublishQuiz(quiz.id, token);
+      toast.success("Quiz publicat.");
+      await loadQuiz();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la publicare.");
+    }
+  };
+
+  const handleSaveQuestion = async (data: QuestionFormData) => {
+    if (!quiz) return;
+    setSaving(true);
+    try {
+      if (editingQuestion) {
+        await brightEduApi.adminUpdateQuestion(editingQuestion.id, {
+          text: data.text,
+          type: data.type,
+          order: data.order,
+          points: data.points,
+          answers: data.answers
+        }, token);
+        toast.success("Întrebare actualizată.");
+      } else {
+        await brightEduApi.adminCreateQuestion(quiz.id, {
+          quizId: quiz.id,
+          text: data.text,
+          type: data.type,
+          order: data.order,
+          points: data.points,
+          answers: data.answers
+        }, token);
+        toast.success("Întrebare adăugată.");
+      }
+      setView("list");
+      setEditingQuestion(null);
+      await loadQuiz();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la salvare.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteQuestion = async (id: string) => {
+    if (!await confirm("Ștergi această întrebare?")) return;
+    try {
+      await brightEduApi.adminDeleteQuestion(id, token);
+      toast.info("Întrebare ștearsă.");
+      await loadQuiz();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la ștergere.");
+    }
+  };
+
+  if (loading) return <LoadingPanel message="Încărcăm quiz-ul..." />;
+  if (error) return <ErrorPanel message={error} />;
+
+  // Create quiz form
+  if (!quiz && view !== "form") {
+    return (
+      <div>
+        <div style={{ marginBottom: "1.5rem" }}>
+          <h2 style={{ margin: "0 0 0.4rem" }}>Quiz — {target.title}</h2>
+          <p className="muted" style={{ margin: 0 }}>Nu există quiz pentru acest {target.type === "lesson" ? "lecție" : "modul"} încă.</p>
+        </div>
+        <div className="panel form-panel">
+          <h3 style={{ marginTop: 0 }}>Creează quiz</h3>
+          <QuizSettingsForm form={quizForm} onChange={setQuizForm} />
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+            <button className="btn-primary" onClick={handleCreateQuiz} disabled={saving}>{saving ? "Se creează..." : "Creează quiz"}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "form" && quiz) {
+    return (
+      <FormShell title={`Editează quiz: ${quiz.title}`} onBack={() => setView("list")}>
+        <QuizSettingsForm form={quizForm} onChange={setQuizForm} />
+        <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+          <button className="btn-primary" onClick={handleUpdateQuiz} disabled={saving}>{saving ? "Se salvează..." : "Salvează"}</button>
+          <button className="btn-secondary" onClick={() => setView("list")}>Anulează</button>
+        </div>
+      </FormShell>
+    );
+  }
+
+  if (view === "question-form") {
+    const initial: QuestionFormData | null = editingQuestion
+      ? {
+          text: editingQuestion.text,
+          type: editingQuestion.type,
+          order: editingQuestion.order,
+          points: editingQuestion.points,
+          answers: editingQuestion.answers.map(a => ({ text: a.text, isCorrect: a.isCorrect, order: a.order }))
+        }
+      : null;
+    return (
+      <FormShell
+        title={editingQuestion ? "Editează întrebare" : "Întrebare nouă"}
+        onBack={() => { setView("list"); setEditingQuestion(null); }}
+      >
+        <QuestionForm
+          initial={initial}
+          nextOrder={questions.length + 1}
+          onSave={handleSaveQuestion}
+          onCancel={() => { setView("list"); setEditingQuestion(null); }}
+          saving={saving}
+        />
+      </FormShell>
+    );
+  }
+
+  // Main list view
+  return (
+    <div>
+      {dialogNode}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+        <div>
+          <h2 style={{ margin: "0 0 0.3rem" }}>Quiz — {target.title}</h2>
+          {quiz && (
+            <div className="pill-row">
+              <span className="pill">{quiz.title}</span>
+              <span className={`pill ${quiz.state === "Published" ? "pill-green" : ""}`}>{quiz.state}</span>
+              <span className="pill">{quiz.questionCount} întrebări</span>
+              <span className="pill">Prag {quiz.passingScore}%</span>
+              <span className="pill">Max {quiz.maxAttempts} încercări</span>
+            </div>
+          )}
+        </div>
+        {quiz && (
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => setView("form")}>Editează setări</button>
+            {quiz.state !== "Published" && (
+              <button className="btn-primary" style={{ fontSize: "0.8rem" }} onClick={handlePublishQuiz}>Publică quiz</button>
+            )}
+            <button className="btn-danger" style={{ fontSize: "0.8rem", minHeight: "36px", padding: "0 0.85rem" }} onClick={handleDeleteQuiz}>Șterge quiz</button>
+          </div>
+        )}
+      </div>
+
+      {quiz && (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <h3 style={{ margin: 0 }}>Întrebări ({questions.length})</h3>
+            <button className="btn-primary" onClick={() => { setEditingQuestion(null); setView("question-form"); }}>+ Adaugă întrebare</button>
+          </div>
+
+          {questions.length === 0 ? (
+            <p className="muted">Nu există întrebări încă. Adaugă prima întrebare!</p>
+          ) : (
+            <div style={{ display: "grid", gap: "0.75rem" }}>
+              {questions.map(q => (
+                <article key={q.id} className="panel" style={{ gap: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      <div className="pill-row" style={{ marginBottom: "0.4rem" }}>
+                        <span className="pill">#{q.order}</span>
+                        <span className="pill">{q.type}</span>
+                        <span className="pill">{q.points} pt</span>
+                      </div>
+                      <p style={{ margin: "0 0 0.5rem", fontWeight: 500 }}>{q.text}</p>
+                      <div style={{ display: "grid", gap: "0.2rem" }}>
+                        {q.answers.map((a: AdminAnswer) => (
+                          <div key={a.id} style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
+                            <span style={{ color: a.isCorrect ? "var(--success, #22c55e)" : "var(--muted)", fontWeight: a.isCorrect ? 600 : 400 }}>
+                              {a.isCorrect ? "✓" : "○"}
+                            </span>
+                            <span className={a.isCorrect ? "" : "muted"}>{a.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "0.5rem", marginLeft: "1rem" }}>
+                      <button className="btn-secondary" style={{ fontSize: "0.8rem" }} onClick={() => { setEditingQuestion(q); setView("question-form"); }}>Editează</button>
+                      <button className="btn-danger" style={{ fontSize: "0.8rem", minHeight: "36px", padding: "0 0.85rem" }} onClick={() => handleDeleteQuestion(q.id)}>Șterge</button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Quiz Settings Form (shared for create + edit) ────────────────────────────
+
+function QuizSettingsForm({
+  form,
+  onChange
+}: {
+  form: { title: string; passingScore: number; maxAttempts: number; shuffleQuestions: boolean; shuffleAnswers: boolean };
+  onChange: (f: { title: string; passingScore: number; maxAttempts: number; shuffleQuestions: boolean; shuffleAnswers: boolean }) => void;
+}) {
+  return (
+    <div style={{ display: "grid", gap: "1rem" }}>
+      <div>
+        <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Titlu quiz *</label>
+        <input className="input" value={form.title} onChange={e => onChange({ ...form, title: e.target.value })} placeholder="ex. Test final modul 1" />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div>
+          <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Prag promovare (%)</label>
+          <input className="input" type="number" min={0} max={100} value={form.passingScore} onChange={e => onChange({ ...form, passingScore: Number(e.target.value) })} />
+        </div>
+        <div>
+          <label className="muted" style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600 }}>Max încercări (0 = nelimitat)</label>
+          <input className="input" type="number" min={0} value={form.maxAttempts} onChange={e => onChange({ ...form, maxAttempts: Number(e.target.value) })} />
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: "1.5rem" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem" }}>
+          <input type="checkbox" checked={form.shuffleQuestions} onChange={e => onChange({ ...form, shuffleQuestions: e.target.checked })} />
+          Amestecă întrebările
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem" }}>
+          <input type="checkbox" checked={form.shuffleAnswers} onChange={e => onChange({ ...form, shuffleAnswers: e.target.checked })} />
+          Amestecă răspunsurile
+        </label>
+      </div>
+    </div>
+  );
+}
+
+// ─── Media Tab ────────────────────────────────────────────────────────────────
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5164";
+
+function MediaTab({ token }: { token: string }) {
+  const toast = useToast();
+  const { confirm, dialogNode } = useConfirm();
+  const [assets, setAssets] = useState<AdminMediaAsset[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  const load = async () => {
+    try {
+      setAssets(await brightEduApi.adminGetMedia(token));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la încărcarea media.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void load(); }, []);
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    let uploaded = 0;
+    for (const file of Array.from(files)) {
+      try {
+        const asset = await brightEduApi.adminUploadMedia(file, token);
+        setAssets(prev => [asset, ...prev]);
+        uploaded++;
+      } catch (e) {
+        toast.error(`${file.name}: ${e instanceof Error ? e.message : "eroare"}`);
+      }
+    }
+    if (uploaded > 0) toast.success(`${uploaded} fișier(e) încărcate.`);
+    setUploading(false);
+  };
+
+  const handleDelete = async (asset: AdminMediaAsset) => {
+    const ok = await confirm(`Ștergi fișierul "${asset.fileName}"?`);
+    if (!ok) return;
+    try {
+      await brightEduApi.adminDeleteMedia(asset.id, token);
+      setAssets(prev => prev.filter(a => a.id !== asset.id));
+      toast.success("Fișier șters.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la ștergere.");
+    }
+  };
+
+  const copyUrl = (url: string) => {
+    void navigator.clipboard.writeText(`${API_BASE}${url}`);
+    toast.info("URL copiat în clipboard.");
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const isImage = (mime: string) => mime.startsWith("image/");
+
+  if (loading) return <LoadingPanel message="Se încarcă fișierele..." />;
+
+  return (
+    <div>
+      {dialogNode}
+
+      {/* Drop zone */}
+      <div
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={e => { e.preventDefault(); setDragOver(false); void handleFiles(e.dataTransfer.files); }}
+        style={{
+          border: `2px dashed ${dragOver ? "var(--accent-strong)" : "var(--line)"}`,
+          borderRadius: "20px",
+          padding: "2.5rem",
+          textAlign: "center",
+          background: dragOver ? "rgba(144,70,207,0.05)" : "rgba(255,255,255,0.5)",
+          marginBottom: "2rem",
+          transition: "all 0.15s"
+        }}
+      >
+        <p className="muted" style={{ margin: "0 0 1rem" }}>
+          {uploading ? "Se încarcă..." : "Trage fișierele aici sau"}
+        </p>
+        <label className="btn-primary" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", minHeight: 40, padding: "0 1.25rem", borderRadius: 999, fontWeight: 700 }}>
+          Alege fișiere
+          <input
+            type="file"
+            multiple
+            accept="image/*,application/pdf,video/mp4,video/webm"
+            style={{ display: "none" }}
+            onChange={e => void handleFiles(e.target.files)}
+            disabled={uploading}
+          />
+        </label>
+        <p className="muted" style={{ margin: "0.75rem 0 0", fontSize: "0.85rem" }}>
+          Permis: imagini, PDF, video · max 50 MB / fișier
+        </p>
+      </div>
+
+      {/* Grid */}
+      {assets.length === 0 ? (
+        <p className="muted">Nu există fișiere încărcate încă.</p>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem" }}>
+          {assets.map(asset => (
+            <div key={asset.id} className="panel" style={{ padding: "0.85rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              {/* Preview */}
+              <div style={{ height: 120, borderRadius: 12, overflow: "hidden", background: "var(--surface-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {isImage(asset.mimeType) ? (
+                  <img
+                    src={`${API_BASE}${asset.url}`}
+                    alt={asset.fileName}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <span style={{ fontSize: "2.5rem" }}>
+                    {asset.mimeType === "application/pdf" ? "📄" : "🎬"}
+                  </span>
+                )}
+              </div>
+
+              {/* Info */}
+              <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={asset.fileName}>
+                {asset.fileName}
+              </p>
+              <p className="muted" style={{ margin: 0, fontSize: "0.75rem" }}>
+                {formatSize(asset.sizeInBytes)}
+              </p>
+
+              {/* Actions */}
+              <div style={{ display: "flex", gap: "0.4rem", marginTop: "auto" }}>
+                <button
+                  className="btn-secondary"
+                  style={{ flex: 1, fontSize: "0.8rem", minHeight: 34 }}
+                  onClick={() => copyUrl(asset.url)}
+                >
+                  Copiază URL
+                </button>
+                <button
+                  className="btn-danger"
+                  style={{ fontSize: "0.8rem", minHeight: 34, padding: "0 0.75rem" }}
+                  onClick={() => void handleDelete(asset)}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Admin Page ──────────────────────────────────────────────────────────
+
+export function AdminPage() {
+  const { user } = useAuth();
+  const [tab, setTab] = useState<Tab>("courses");
+  const [selectedCourse, setSelectedCourse] = useState<AdminCourse | null>(null);
+  const [selectedModule, setSelectedModule] = useState<AdminModule | null>(null);
+  const [selectedQuizTarget, setSelectedQuizTarget] = useState<QuizTarget | null>(null);
+
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.roles.includes("Admin")) {
+    return (
+      <section className="section">
+        <div className="page-title">
+          <h1>Acces interzis</h1>
+          <p className="muted">Această pagină este disponibilă doar administratorilor.</p>
+        </div>
+      </section>
+    );
+  }
+
+  const handleSelectCourse = async (c: AdminCourse) => {
+    setSelectedCourse(c);
+    setSelectedModule(null);
+    setSelectedQuizTarget(null);
+    setTab("modules");
+  };
+
+  const handleSelectModule = (m: AdminModule) => {
+    setSelectedModule(m);
+    setTab("lessons");
+  };
+
+  const handleSelectQuiz = (target: QuizTarget) => {
+    setSelectedQuizTarget(target);
+    setTab("quiz");
+  };
+
+  const tabStyle = (t: Tab) => ({
+    padding: "0.6rem 1.25rem",
+    borderBottom: tab === t ? "2px solid var(--accent-strong, #9046cf)" : "2px solid transparent",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    fontWeight: tab === t ? 600 : 400,
+    color: tab === t ? "var(--accent-strong, #9046cf)" : "inherit"
+  } as React.CSSProperties);
+
+  return (
+    <section className="section">
+      <div className="page-title">
+        <span className="eyebrow">Admin panel</span>
+        <h1>Management BrightEdu</h1>
+        <p className="muted">Gestionează cursuri, module și lecții. Conectat ca <strong>{user.email}</strong>.</p>
+      </div>
+
+      <div style={{ borderBottom: "1px solid var(--line)", marginBottom: "2rem", display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
+        <button style={tabStyle("courses")} onClick={() => setTab("courses")}>Cursuri</button>
+        {selectedCourse && (
+          <button style={tabStyle("modules")} onClick={() => setTab("modules")}>
+            Module — {selectedCourse.title}
+          </button>
+        )}
+        {selectedModule && (
+          <button style={tabStyle("lessons")} onClick={() => setTab("lessons")}>
+            Lecții — {selectedModule.title}
+          </button>
+        )}
+        {selectedQuizTarget && (
+          <button style={tabStyle("quiz")} onClick={() => setTab("quiz")}>
+            Quiz — {selectedQuizTarget.title}
+          </button>
+        )}
+        <button style={tabStyle("media")} onClick={() => setTab("media")}>Media</button>
+      </div>
+
+      {tab === "courses" && (
+        <CoursesTab token={user.accessToken} onSelectCourse={handleSelectCourse} />
+      )}
+
+      {tab === "modules" && selectedCourse && (
+        <ModulesTab
+          token={user.accessToken}
+          course={selectedCourse}
+          onSelectModule={handleSelectModule}
+          onSelectQuiz={handleSelectQuiz}
+          onModulesChanged={() => {}}
+        />
+      )}
+
+      {tab === "lessons" && selectedCourse && selectedModule && (
+        <LessonsTab
+          token={user.accessToken}
+          course={selectedCourse}
+          module={selectedModule}
+          onSelectQuiz={handleSelectQuiz}
+        />
+      )}
+
+      {tab === "quiz" && selectedQuizTarget && (
+        <QuizTab
+          token={user.accessToken}
+          target={selectedQuizTarget}
+        />
+      )}
+
+      {tab === "media" && (
+        <MediaTab token={user.accessToken} />
+      )}
+    </section>
+  );
+}

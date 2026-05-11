@@ -21,9 +21,17 @@ public sealed class LessonRepository : ILessonRepository
     public async Task<Lesson?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await _dbContext.Lessons
+            .Include(l => l.Translations)
+            .Include(l => l.ContentBlocks)
+            .Include(l => l.Attachments)
+                .ThenInclude(a => a.MediaAsset)
             .Include(l => l.Quiz)
-            .ThenInclude(q => q.Questions)
-            .ThenInclude(qst => qst.Answers)
+            .ThenInclude(q => q!.Questions)
+            .ThenInclude(q => q.Translations)
+            .Include(l => l.Quiz)
+            .ThenInclude(q => q!.Questions)
+            .ThenInclude(q => q.Answers)
+            .ThenInclude(a => a.Translations)
             .AsNoTracking()
             .FirstOrDefaultAsync(l => l.Id == id, ct);
     }

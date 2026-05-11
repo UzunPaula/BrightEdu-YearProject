@@ -20,6 +20,7 @@ public sealed class CourseRepository : ICourseReadRepository, ICourseWriteReposi
     public async Task<IReadOnlyList<Course>> GetAllAsync(CancellationToken ct = default)
     {
         return await _dbContext.Courses
+            .Include(x => x.Translations)
             .AsNoTracking()
             .ToListAsync(ct);
     }

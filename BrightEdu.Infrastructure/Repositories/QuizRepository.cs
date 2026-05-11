@@ -24,7 +24,10 @@ public sealed class QuizRepository : IQuizRepository
     {
         return await _dbContext.Quizzes
             .Include(q => q.Questions)
+            .ThenInclude(qst => qst.Translations)
+            .Include(q => q.Questions)
             .ThenInclude(qst => qst.Answers)
+            .ThenInclude(ans => ans.Translations)
             .AsNoTracking()
             .FirstOrDefaultAsync(q => q.Id == id, ct);
     }

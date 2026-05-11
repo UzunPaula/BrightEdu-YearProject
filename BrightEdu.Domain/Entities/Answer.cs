@@ -1,48 +1,58 @@
+using BrightEdu.Domain.Enums;
+
 namespace BrightEdu.Domain.Entities;
 
 public class Answer
 {
-    public Guid Id { get; private set; }
-    public string Text { get; private set; }
-    public bool IsCorrect { get; private set; }
+    private readonly List<AnswerOptionTranslation> _translations = new();
 
-    // Cheie străină către întrebarea din care face parte răspunsul.
-    public Guid QuestionId { get; private set; }
+    private Answer()
+    {
+    }
 
-    // Proprietate de navigare către întrebare.
-    public Question Question { get; private set; } = null!;
-
-    // Constructor privat necesar pentru EF Core.
-    private Answer() { }
-
-    // Constructorul principal pentru crearea unui răspuns valid.
     public Answer(Guid id, string text, bool isCorrect, Guid questionId)
     {
-        if (id == Guid.Empty)
-            throw new ArgumentException("Id invalid.", nameof(id));
-
-        if (questionId == Guid.Empty)
-            throw new ArgumentException("QuestionId invalid.", nameof(questionId));
+        if (id == Guid.Empty) throw new ArgumentException("Id invalid.", nameof(id));
+        if (questionId == Guid.Empty) throw new ArgumentException("QuestionId invalid.", nameof(questionId));
 
         Id = id;
         IsCorrect = isCorrect;
         QuestionId = questionId;
-
-        SetText(text);
+        Order = 1;
+        AddTranslation(LanguageCode.Ro, text);
     }
 
-    // Setează textul răspunsului cu validare.
-    public void SetText(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-            throw new ArgumentException("Textul răspunsului nu poate fi gol.", nameof(text));
+    public Guid Id { get; private set; }
+    public Guid QuestionId { get; private set; }
+    public Question Question { get; private set; } = null!;
+    public bool IsCorrect { get; private set; }
+    public int Order { get; private set; }
 
-        Text = text.Trim();
-    }
+    public IReadOnlyCollection<AnswerOptionTranslation> Translations => _translations.AsReadOnly();
 
-    // Permite schimbarea valorii IsCorrect dacă va fi nevoie mai târziu.
-    public void SetIsCorrect(bool isCorrect)
+    public string Text => GetTranslation(LanguageCode.Ro)?.Text ?? _translations.FirstOrDefault()?.Text ?? string.Empty;
+
+    public void Configure(bool isCorrect, int order)
     {
+        if (order <= 0) throw new ArgumentOutOfRangeException(nameof(order));
+
         IsCorrect = isCorrect;
+        Order = order;
     }
+
+    public void AddTranslation(LanguageCode languageCode, string text)
+    {
+        var existing = GetTranslation(languageCode);
+        if (existing is null)
+        {
+            _translations.Add(new AnswerOptionTranslation(Guid.NewGuid(), Id, languageCode, text));
+        }
+        else
+        {
+            existing.Update(text);
+        }
+    }
+
+    public AnswerOptionTranslation? GetTranslation(LanguageCode languageCode)
+        => _translations.FirstOrDefault(x => x.LanguageCode == languageCode);
 }

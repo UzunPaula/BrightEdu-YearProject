@@ -1,69 +1,159 @@
+using System.Text;
 using BrightEdu.Application.DesignPatterns.Bridge;
 using BrightEdu.Application.DesignPatterns.Decorator;
 using BrightEdu.Application.DesignPatterns.Flyweight;
 using BrightEdu.Application.DesignPatterns.Proxy;
+using BrightEdu.Application.Features.Admin;
+using BrightEdu.Application.Features.Auth;
+using BrightEdu.Application.Features.Catalog;
 using BrightEdu.Application.Features.Courses;
 using BrightEdu.Application.Features.Lessons;
 using BrightEdu.Application.Features.Quizzes;
+using BrightEdu.Application.Features.QuizAttempts;
+using BrightEdu.Application.Features.Students;
 using BrightEdu.Application.Interfaces;
 using BrightEdu.Infrastructure.DataAccess;
 using BrightEdu.Infrastructure.Repositories;
+using BrightEdu.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Adăugăm serviciile necesare pentru API și Swagger.
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Introdu token-ul JWT: Bearer {token}"
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("BrightEduFrontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
-// Înregistrăm repository-urile in-memory.
-// Acestea simulează temporar accesul la date până conectăm EF Core.    
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var secretKey = jwtSection["SecretKey"] ?? throw new InvalidOperationException("Jwt:SecretKey lipsește.");
+var issuer = jwtSection["Issuer"] ?? throw new InvalidOperationException("Jwt:Issuer lipsește.");
+var audience = jwtSection["Audience"] ?? throw new InvalidOperationException("Jwt:Audience lipsește.");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = issuer,
+            ValidAudience = audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddScoped<ICourseReadRepository, CourseRepository>();
 builder.Services.AddScoped<ICourseWriteRepository, CourseRepository>();
+builder.Services.AddScoped<ICourseCatalogRepository, CourseCatalogRepository>();
 builder.Services.AddScoped<ILessonRepository, LessonRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
+builder.Services.AddScoped<IQuizAttemptRepository, QuizAttemptRepository>();
+builder.Services.AddScoped<ILessonProgressRepository, LessonProgressRepository>();
+builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
+builder.Services.AddScoped<IPasswordHashService, Pbkdf2PasswordHashService>();
+builder.Services.AddScoped<IAuthTokenService, JwtTokenService>();
+builder.Services.AddScoped<Pbkdf2PasswordHashService>();
+builder.Services.AddScoped<SampleDataSeeder>();
 
-// Înregistrăm serviciul pentru citirea cursurilor.
 builder.Services.AddScoped<IGetCoursesService, GetCoursesService>();
+builder.Services.AddScoped<IPublicCourseCatalogService, PublicCourseCatalogService>();
 builder.Services.AddScoped<IGetLessonService, GetLessonService>();
+builder.Services.AddScoped<IPublicLessonService, PublicLessonService>();
 builder.Services.AddScoped<ICreateLessonService, CreateLessonService>();
 builder.Services.AddScoped<ICreateQuizService, CreateQuizService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IStartQuizAttemptService, StartQuizAttemptService>();
+builder.Services.AddScoped<ISubmitQuizAttemptService, SubmitQuizAttemptService>();
+builder.Services.AddScoped<IQuizAttemptHistoryService, QuizAttemptHistoryService>();
+builder.Services.AddScoped<ICourseEnrollmentService, CourseEnrollmentService>();
+builder.Services.AddScoped<ILessonProgressService, LessonProgressService>();
+builder.Services.AddScoped<IStudentDashboardService, StudentDashboardService>();
+
+builder.Services.AddScoped<IAdminCourseRepository, AdminCourseRepository>();
+builder.Services.AddScoped<IAdminModuleRepository, AdminModuleRepository>();
+builder.Services.AddScoped<IAdminLessonRepository, AdminLessonRepository>();
+builder.Services.AddScoped<IAdminQuizRepository, AdminQuizRepository>();
+builder.Services.AddScoped<IAdminQuestionRepository, AdminQuestionRepository>();
+builder.Services.AddScoped<IAdminCourseService, AdminCourseService>();
+builder.Services.AddScoped<IAdminModuleService, AdminModuleService>();
+builder.Services.AddScoped<IAdminLessonService, AdminLessonService>();
+builder.Services.AddScoped<IAdminQuizService, AdminQuizService>();
+builder.Services.AddScoped<IAdminQuestionService, AdminQuestionService>();
+builder.Services.AddScoped<IMediaAssetRepository, MediaAssetRepository>();
+builder.Services.AddScoped<IFileStorageService>(_ =>
+{
+    var uploadsRoot = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "uploads");
+    return new LocalFileStorageService(uploadsRoot);
+});
+builder.Services.AddScoped<IAdminMediaService, AdminMediaService>();
 
 builder.Services.AddScoped<QuizAccessService>();
 builder.Services.AddScoped<IQuizAccessService, QuizAccessProxy>();
-
-// Înregistrăm serviciul de bază care calculează scorul quiz-ului
 builder.Services.AddScoped<QuizEvaluationService>();
-// Înregistrăm interfața folosind Decorator
 builder.Services.AddScoped<IQuizEvaluationService>(sp =>
 {
-    // Luăm serviciul real din DI
     var baseService = sp.GetRequiredService<QuizEvaluationService>();
-    // Adăugăm validarea peste serviciul real
     var validationDecorator = new QuizEvaluationValidationDecorator(baseService);
-    // Adăugăm feedback peste validare
     var feedbackDecorator = new QuizEvaluationFeedbackDecorator(validationDecorator);
-    // Returnăm lanțul final de decoratori
     return feedbackDecorator;
 });
 
-// Înregistrăm factory-ul ca Singleton ca să păstreze obiectele partajate
 builder.Services.AddSingleton<QuestionTypeFactory>();
-// Înregistrăm serviciul care folosește Flyweight
 builder.Services.AddScoped<QuestionRenderingService>();
-// Repository pentru Question
-builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
-
-// Înregistrăm serviciul care aplică Bridge pentru afișarea lecțiilor
 builder.Services.AddScoped<LessonBridgeService>();
 
-builder.Services.AddDbContext<AppDbContext>(options => 
+builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
-// Configurăm Swagger doar în Development.
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<SampleDataSeeder>();
+    await seeder.SeedAsync();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -71,6 +161,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseCors("BrightEduFrontend");
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

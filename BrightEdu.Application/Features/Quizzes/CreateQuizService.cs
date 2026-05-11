@@ -20,10 +20,7 @@ public sealed class CreateQuizService : ICreateQuizService
 
     public async Task<Guid> CreateAsync(CreateQuizRequestDto request, CancellationToken ct = default)
     {
-        var quiz = new Quiz(
-            Guid.NewGuid(),
-            request.Title,
-            request.LessonId);
+        var quiz = Quiz.ForLesson(request.Title, request.LessonId);
 
         await _quizRepository.AddAsync(quiz, ct);
 

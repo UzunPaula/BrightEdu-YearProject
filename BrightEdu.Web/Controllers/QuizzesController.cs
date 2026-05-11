@@ -1,12 +1,14 @@
 using BrightEdu.Application.DesignPatterns.Proxy;
 using BrightEdu.Application.DTOs;
 using BrightEdu.Application.Features.Quizzes;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BrightEdu.Web.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class QuizzesController : ControllerBase
 {
     private readonly ICreateQuizService _createQuizService;
