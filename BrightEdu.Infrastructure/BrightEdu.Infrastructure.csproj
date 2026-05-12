@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
@@ -15,18 +15,30 @@
       <Folder Include="Services\" />
     </ItemGroup>
 
+    <!-- Patternuri active: Builder, Singleton, Facade (incluse implicit) -->
+    <!-- Patternuri excluse: tot restul DesignPatterns -->
     <ItemGroup>
-      <Compile Remove="DesignPatterns\**" />
+      <Compile Remove="DesignPatterns\Adapter\**" />
+      <Compile Remove="DesignPatterns\AbstractFactory\**" />
+      <Compile Remove="DesignPatterns\Composite\**" />
+      <Compile Remove="DesignPatterns\FactoryMethod\**" />
+      <Compile Remove="DesignPatterns\Prototype\**" />
       <Compile Remove="Migrations\**" />
     </ItemGroup>
 
     <ItemGroup>
-      <EmbeddedResource Remove="DesignPatterns\**" />
+      <EmbeddedResource Remove="DesignPatterns\Adapter\**" />
+      <EmbeddedResource Remove="DesignPatterns\AbstractFactory\**" />
+      <EmbeddedResource Remove="DesignPatterns\Composite\**" />
+      <EmbeddedResource Remove="DesignPatterns\FactoryMethod\**" />
       <EmbeddedResource Remove="Migrations\**" />
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="DesignPatterns\**" />
+      <None Remove="DesignPatterns\Adapter\**" />
+      <None Remove="DesignPatterns\AbstractFactory\**" />
+      <None Remove="DesignPatterns\Composite\**" />
+      <None Remove="DesignPatterns\FactoryMethod\**" />
       <None Remove="Migrations\**" />
     </ItemGroup>
 
