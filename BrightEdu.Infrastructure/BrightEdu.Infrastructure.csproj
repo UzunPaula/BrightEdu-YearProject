@@ -19,26 +19,20 @@
     <!-- Patternuri excluse: tot restul DesignPatterns -->
     <ItemGroup>
       <Compile Remove="DesignPatterns\Adapter\**" />
-      <Compile Remove="DesignPatterns\AbstractFactory\**" />
       <Compile Remove="DesignPatterns\Composite\**" />
-      <Compile Remove="DesignPatterns\FactoryMethod\**" />
       <Compile Remove="DesignPatterns\Prototype\**" />
       <Compile Remove="Migrations\**" />
     </ItemGroup>
 
     <ItemGroup>
       <EmbeddedResource Remove="DesignPatterns\Adapter\**" />
-      <EmbeddedResource Remove="DesignPatterns\AbstractFactory\**" />
       <EmbeddedResource Remove="DesignPatterns\Composite\**" />
-      <EmbeddedResource Remove="DesignPatterns\FactoryMethod\**" />
       <EmbeddedResource Remove="Migrations\**" />
     </ItemGroup>
 
     <ItemGroup>
       <None Remove="DesignPatterns\Adapter\**" />
-      <None Remove="DesignPatterns\AbstractFactory\**" />
       <None Remove="DesignPatterns\Composite\**" />
-      <None Remove="DesignPatterns\FactoryMethod\**" />
       <None Remove="Migrations\**" />
     </ItemGroup>
 

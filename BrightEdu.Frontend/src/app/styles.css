@@ -189,7 +189,7 @@ button {
   position: relative;
   z-index: 2;
   width: 100%;
-  max-width: 500px;
+  max-width: 800px;
   display: block;
   filter: drop-shadow(0 20px 48px rgba(247, 108, 157, 0.22));
   transition: filter 0.4s ease;
@@ -348,6 +348,7 @@ button {
 .footer {
   padding: 2rem 0 3rem;
   color: var(--muted);
+  text-align: center;
 }
 
 .nav-user {

@@ -9,6 +9,8 @@ import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { AdminPage } from "../pages/AdminPage";
 import { StudentDashboardPage } from "../pages/StudentDashboardPage";
+import { ProfilePage } from "../pages/ProfilePage";
+import { MyCoursesPage } from "../pages/MyCoursesPage";
 
 export default function App() {
   return (
@@ -23,7 +25,9 @@ export default function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path="/student" element={<StudentDashboardPage />} />
+          <Route path="/my-courses" element={<MyCoursesPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Route>
     </Routes>

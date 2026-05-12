@@ -42,4 +42,7 @@ public sealed class UserRepository : IUserRepository
         await _dbContext.UserRoles.AddAsync(new UserRole(user.Id, studentRole.Id), ct);
         await _dbContext.SaveChangesAsync(ct);
     }
+
+    public Task SaveChangesAsync(CancellationToken ct = default)
+        => _dbContext.SaveChangesAsync(ct);
 }

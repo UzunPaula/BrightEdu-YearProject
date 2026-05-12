@@ -27,20 +27,18 @@
       <Compile Remove="Features\Lessons\CreateLessonWithBuilderService.cs" />
       <Compile Remove="Features\Lessons\CreateLessonWithFactoryMethodService.cs" />
       <Compile Remove="Features\Lessons\CreateLessonWithPrototypeService.cs" />
-      <Compile Remove="DesignPatterns\FactoryMethod\**" />
-      <Compile Remove="DesignPatterns\AbstractFactory\**" />
+      <Compile Remove="DesignPatterns\FactoryMethod\Steps\ILessonStepCreator.cs" />
+      <Compile Remove="DesignPatterns\FactoryMethod\Steps\ILessonStepCreatorResolver.cs" />
+      <Compile Remove="DesignPatterns\AbstractFactory\Steps\ILessonStepAbstractFactory.cs" />
+      <Compile Remove="DesignPatterns\AbstractFactory\Steps\ILessonStepAbstractFactoryResolver.cs" />
     </ItemGroup>
 
     <ItemGroup>
       <EmbeddedResource Remove="Features\Lessons\Mapper\**" />
-      <EmbeddedResource Remove="DesignPatterns\FactoryMethod\**" />
-      <EmbeddedResource Remove="DesignPatterns\AbstractFactory\**" />
     </ItemGroup>
 
     <ItemGroup>
       <None Remove="Features\Lessons\Mapper\**" />
-      <None Remove="DesignPatterns\FactoryMethod\**" />
-      <None Remove="DesignPatterns\AbstractFactory\**" />
     </ItemGroup>
 
 </Project>

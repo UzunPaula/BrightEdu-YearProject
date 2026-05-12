@@ -17,16 +17,16 @@ public sealed class LessonProgressRepository : ILessonProgressRepository
     public async Task<LessonProgress?> GetAsync(Guid studentId, Guid lessonId, CancellationToken ct = default)
     {
         return await _dbContext.LessonProgresses
-            .Include(x => x.Lesson)
-            .ThenInclude(x => x.Course)
+            .Include(x => x.Lesson).ThenInclude(l => l.Translations)
+            .Include(x => x.Lesson).ThenInclude(l => l.Course).ThenInclude(c => c.Translations)
             .FirstOrDefaultAsync(x => x.StudentId == studentId && x.LessonId == lessonId, ct);
     }
 
     public async Task<IReadOnlyList<LessonProgress>> GetForStudentAsync(Guid studentId, CancellationToken ct = default)
     {
         return await _dbContext.LessonProgresses
-            .Include(x => x.Lesson)
-            .ThenInclude(x => x.Course)
+            .Include(x => x.Lesson).ThenInclude(l => l.Translations)
+            .Include(x => x.Lesson).ThenInclude(l => l.Course).ThenInclude(c => c.Translations)
             .Where(x => x.StudentId == studentId)
             .AsNoTracking()
             .ToListAsync(ct);

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../features/auth/AuthContext";
+import { PasswordInput } from "../shared/components/PasswordInput";
 
 const inputStyle: React.CSSProperties = {
   padding: "0.72rem 1rem",
@@ -108,12 +109,11 @@ export function LoginPage() {
             <span style={{ fontSize: "0.83rem", fontWeight: 600, color: "var(--muted)" }}>
               {t("login.password")}
             </span>
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              style={inputStyle}
+              inputStyle={inputStyle}
               onFocus={e => (e.currentTarget.style.borderColor = "var(--accent-strong)")}
               onBlur={e => (e.currentTarget.style.borderColor = "var(--line)")}
             />

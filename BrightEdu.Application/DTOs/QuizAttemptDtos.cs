@@ -19,6 +19,15 @@ public sealed record QuizAttemptResultDto(
     DateTime StartedAt,
     DateTime? SubmittedAt);
 
+public sealed record AttemptQuestionResultDto(
+    Guid QuestionId,
+    string QuestionText,
+    Guid? SelectedOptionId,
+    string? SelectedOptionText,
+    Guid? CorrectOptionId,
+    string? CorrectOptionText,
+    bool IsCorrect);
+
 public sealed record QuizHistoryItemDto(
     Guid AttemptId,
     Guid QuizId,
@@ -26,7 +35,8 @@ public sealed record QuizHistoryItemDto(
     decimal? Score,
     bool Passed,
     DateTime StartedAt,
-    DateTime? SubmittedAt);
+    DateTime? SubmittedAt,
+    IReadOnlyList<AttemptQuestionResultDto>? QuestionResults);
 
 public sealed record SubmitQuizAttemptResultDto(
     Guid AttemptId,

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../features/auth/AuthContext";
+import { PasswordInput } from "../shared/components/PasswordInput";
 
 const inputStyle: React.CSSProperties = {
   padding: "0.72rem 1rem",
@@ -100,11 +101,11 @@ export function RegisterPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <label style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
               <span style={{ fontSize: "0.83rem", fontWeight: 600, color: "var(--muted)" }}>
-                {t("register.firstName")}
+                {t("register.lastName")}
               </span>
               <input
-                value={form.firstName}
-                onChange={set("firstName")}
+                value={form.lastName}
+                onChange={set("lastName")}
                 required
                 style={inputStyle}
                 onFocus={e => (e.currentTarget.style.borderColor = "var(--accent-strong)")}
@@ -113,11 +114,11 @@ export function RegisterPage() {
             </label>
             <label style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
               <span style={{ fontSize: "0.83rem", fontWeight: 600, color: "var(--muted)" }}>
-                {t("register.lastName")}
+                {t("register.firstName")}
               </span>
               <input
-                value={form.lastName}
-                onChange={set("lastName")}
+                value={form.firstName}
+                onChange={set("firstName")}
                 required
                 style={inputStyle}
                 onFocus={e => (e.currentTarget.style.borderColor = "var(--accent-strong)")}
@@ -145,12 +146,11 @@ export function RegisterPage() {
             <span style={{ fontSize: "0.83rem", fontWeight: 600, color: "var(--muted)" }}>
               {t("register.password")}
             </span>
-            <input
-              type="password"
+            <PasswordInput
               value={form.password}
               onChange={set("password")}
               required
-              style={inputStyle}
+              inputStyle={inputStyle}
               onFocus={e => (e.currentTarget.style.borderColor = "var(--accent-strong)")}
               onBlur={e => (e.currentTarget.style.borderColor = "var(--line)")}
             />

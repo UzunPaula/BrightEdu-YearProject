@@ -65,6 +65,9 @@ public sealed record LessonQuizDto(
     string Title,
     int PassingScore,
     int MaxAttempts,
+    bool ShowMistakesAfterAttempt,
+    bool ShowOnlyWrongAnswers,
+    bool ShowCorrectAnswer,
     IReadOnlyList<QuizQuestionDto> Questions);
 
 public sealed record LessonDetailsDto(

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { AuthResponse } from "../../shared/types/api";
 import { brightEduApi } from "../../shared/api/brightEduApi";
+import i18n from "../../shared/i18n";
 
 type AuthState = {
   user: AuthResponse | null;
@@ -20,6 +21,15 @@ type RegisterPayload = {
 
 const STORAGE_KEY = "brightedu.auth";
 
+const LANG_MAP: Record<number, string> = { 1: "ro", 2: "en", 3: "ru" };
+
+function applyLanguage(preferredLanguage: number) {
+  const code = LANG_MAP[preferredLanguage] ?? "ro";
+  if (i18n.language !== code) {
+    void i18n.changeLanguage(code);
+  }
+}
+
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -30,7 +40,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const persisted = localStorage.getItem(STORAGE_KEY);
     if (persisted) {
       try {
-        setUser(JSON.parse(persisted) as AuthResponse);
+        const parsed = JSON.parse(persisted) as AuthResponse;
+        if (!parsed.firstName) {
+          localStorage.removeItem(STORAGE_KEY);
+        } else {
+          setUser(parsed);
+          applyLanguage(parsed.preferredLanguage ?? 1);
+        }
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -42,8 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(authResponse);
     if (authResponse) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(authResponse));
+      applyLanguage(authResponse.preferredLanguage ?? 1);
     } else {
       localStorage.removeItem(STORAGE_KEY);
+      void i18n.changeLanguage("ro");
     }
   };
 

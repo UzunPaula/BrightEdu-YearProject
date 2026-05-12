@@ -48,7 +48,7 @@ public sealed class AuthService : IAuthService
         var roles = new[] { StudentRoleName };
         var accessToken = _authTokenService.CreateAccessToken(user.Id, user.Email, roles, expiresAt);
 
-        return new AuthResponseDto(user.Id, user.Email, accessToken, expiresAt, roles);
+        return new AuthResponseDto(user.Id, user.Email, user.FirstName, user.LastName, accessToken, expiresAt, roles, user.PreferredLanguage);
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken ct = default)
@@ -61,6 +61,6 @@ public sealed class AuthService : IAuthService
         var expiresAt = DateTime.UtcNow.AddMinutes(60);
         var accessToken = _authTokenService.CreateAccessToken(user.Id, user.Email, roles, expiresAt);
 
-        return new AuthResponseDto(user.Id, user.Email, accessToken, expiresAt, roles);
+        return new AuthResponseDto(user.Id, user.Email, user.FirstName, user.LastName, accessToken, expiresAt, roles, user.PreferredLanguage);
     }
 }

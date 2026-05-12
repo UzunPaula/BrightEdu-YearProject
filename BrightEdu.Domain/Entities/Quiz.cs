@@ -46,6 +46,9 @@ public class Quiz
     public int MaxAttempts { get; private set; }
     public bool ShuffleQuestions { get; private set; }
     public bool ShuffleAnswers { get; private set; }
+    public bool ShowMistakesAfterAttempt { get; private set; }
+    public bool ShowOnlyWrongAnswers { get; private set; }
+    public bool ShowCorrectAnswer { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
@@ -67,7 +70,8 @@ public class Quiz
         Touch();
     }
 
-    public void ConfigureRules(int passingScore, int maxAttempts, bool shuffleQuestions, bool shuffleAnswers)
+    public void ConfigureRules(int passingScore, int maxAttempts, bool shuffleQuestions, bool shuffleAnswers,
+        bool showMistakesAfterAttempt = false, bool showOnlyWrongAnswers = false, bool showCorrectAnswer = false)
     {
         if (passingScore < 0 || passingScore > 100)
             throw new ArgumentOutOfRangeException(nameof(passingScore));
@@ -79,6 +83,9 @@ public class Quiz
         MaxAttempts = maxAttempts;
         ShuffleQuestions = shuffleQuestions;
         ShuffleAnswers = shuffleAnswers;
+        ShowMistakesAfterAttempt = showMistakesAfterAttempt;
+        ShowOnlyWrongAnswers = showOnlyWrongAnswers;
+        ShowCorrectAnswer = showCorrectAnswer;
         Touch();
     }
 

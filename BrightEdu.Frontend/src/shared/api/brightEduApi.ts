@@ -1,5 +1,7 @@
 import type {
   AuthResponse,
+  UserProfile,
+  UpdateProfilePayload,
   CourseCard,
   CourseDetails,
   EnrollmentStatus,
@@ -311,5 +313,15 @@ export const brightEduApi = {
   },
   adminUpsertLessonTranslation(id: string, lang: string, payload: UpsertLessonTranslationPayload, token: string) {
     return apiRequest<void>(`/api/admin/lessons/${encodeURIComponent(id)}/translations/${lang}`, { method: "PUT", token, body: payload });
+  },
+
+  // ─── Profile ───────────────────────────────────────────────────────────────
+
+  getProfile(token: string) {
+    return apiRequest<UserProfile>("/api/me/profile", { token });
+  },
+
+  updateProfile(payload: UpdateProfilePayload, token: string) {
+    return apiRequest<UserProfile>("/api/me/profile", { method: "PUT", token, body: payload });
   }
 };
