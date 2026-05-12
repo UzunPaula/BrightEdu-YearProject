@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useTheme } from "../../features/theme/ThemeContext";
 import { useVantaNet } from "../../features/theme/useVantaNet";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faGaugeHigh, faBookOpen, faUserGear, faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
 
 const LANGS = [
   { code: "ro", flagSrc: "https://flagcdn.com/ro.svg", label: "RO" },
@@ -146,7 +148,8 @@ function UserDropdown() {
 
   if (!user) return null;
 
-  const initials = (user.email?.[0] ?? "U").toUpperCase();
+  const fullName = `${user.lastName ?? ""} ${user.firstName ?? ""}`.trim() || user.email;
+  const initials = ((user.lastName?.[0] ?? "") + (user.firstName?.[0] ?? "")).toUpperCase() || (user.email?.[0] ?? "U").toUpperCase();
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
@@ -170,7 +173,7 @@ function UserDropdown() {
           {initials}
         </span>
         <span style={{ maxWidth: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {user.email}
+          {fullName}
         </span>
         <span style={{ fontSize: "0.6rem", opacity: 0.6 }}>▾</span>
       </button>
@@ -183,24 +186,28 @@ function UserDropdown() {
           minWidth: "13rem", zIndex: 999, overflow: "hidden",
         }}>
           <div style={{ padding: "0.65rem 1rem 0.5rem", borderBottom: "1px solid var(--line)" }}>
-            <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>{user.email}</div>
+            <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>{fullName}</div>
+            <div style={{ fontSize: "0.78rem", opacity: 0.55, marginTop: "0.1rem" }}>{user.email}</div>
           </div>
           {[
-            { to: "/student", label: t("nav.dashboard") },
-            { to: "/courses", label: t("nav.myCourses") },
+            { to: "/student", label: t("nav.dashboard"), icon: faGaugeHigh },
+            { to: "/my-courses", label: t("nav.myCourses"), icon: faBookOpen },
+            { to: "/profile", label: t("nav.profile"), icon: faUserGear },
           ].map(item => (
             <Link
               key={item.to}
               to={item.to}
               onClick={() => setOpen(false)}
               style={{
-                display: "block", padding: "0.55rem 1rem",
+                display: "flex", alignItems: "center", gap: "0.6rem",
+                padding: "0.55rem 1rem",
                 color: "inherit", textDecoration: "none", fontSize: "0.9rem",
                 transition: "background 0.15s",
               }}
               onMouseEnter={e => (e.currentTarget.style.background = "rgba(144,70,207,0.08)")}
               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
             >
+              <FontAwesomeIcon icon={item.icon} style={{ width: "0.9rem", opacity: 0.6 }} />
               {item.label}
             </Link>
           ))}
@@ -209,7 +216,8 @@ function UserDropdown() {
               type="button"
               onClick={() => { setOpen(false); logout(); }}
               style={{
-                display: "block", width: "100%", padding: "0.55rem 1rem",
+                display: "flex", alignItems: "center", gap: "0.6rem",
+                width: "100%", padding: "0.55rem 1rem",
                 textAlign: "left", border: "none", background: "transparent",
                 color: "var(--danger, #e05)", fontSize: "0.9rem", cursor: "pointer",
                 transition: "background 0.15s",
@@ -217,6 +225,7 @@ function UserDropdown() {
               onMouseEnter={e => (e.currentTarget.style.background = "rgba(220,50,50,0.07)")}
               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
             >
+              <FontAwesomeIcon icon={faRightFromBracket} style={{ width: "0.9rem", opacity: 0.6 }} />
               {t("nav.logout")}
             </button>
           </div>
@@ -241,7 +250,7 @@ export function MainLayout() {
       <header className="topbar">
         <div className="page-shell topbar-inner">
           <Link to="/" className="brand">
-            <span className="brand-badge">B</span>
+            <img src="/favicon.png" alt="BrightEdu" style={{ width: "3rem", height: "3rem", objectFit: "contain" }} />
             <span>BrightEdu</span>
           </Link>
 

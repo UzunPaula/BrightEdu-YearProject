@@ -34,6 +34,14 @@ public sealed record StudentCourseProgressDto(
     decimal CompletionPercentage,
     DateTime EnrolledAt);
 
+public sealed record QuizStatsDto(
+    int TotalAttempts,
+    int TotalPassed,
+    int UniqueQuizzes,
+    decimal AverageScore,
+    decimal BestScore);
+
 public sealed record StudentDashboardDto(
     IReadOnlyList<StudentCourseProgressDto> Courses,
-    IReadOnlyList<LessonProgressDto> RecentLessons);
+    IReadOnlyList<LessonProgressDto> RecentLessons,
+    QuizStatsDto QuizStats);

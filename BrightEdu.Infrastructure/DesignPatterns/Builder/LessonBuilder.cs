@@ -3,69 +3,60 @@ using BrightEdu.Domain.Entities;
 
 namespace BrightEdu.Infrastructure.DesignPatterns.Builder;
 
-// Implementare concretă a builder-ului pentru construirea obiectelor Lesson.
-// Pattern-ul Builder este folosit pentru a separa construcția unui obiect complex de reprezentarea sa finală.
+// Construiește un obiect Lesson pas cu pas, separând construcția de reprezentare.
 public sealed class LessonBuilder : ILessonBuilder
 {
-    // State-ul intern al builder-ului - stochează datele temporar până la apelul Build()
     private Guid _id;
     private string _title = string.Empty;
-    private readonly List<LessonStep> _steps = new();
+    private Guid _courseId;
+    private int _order;
+    private string _content = string.Empty;
 
-    // Configurează identificatorul unic al lecției.
     public ILessonBuilder WithId(Guid id)
     {
         _id = id;
         return this;
     }
 
-    // Configurează titlul lecției.
     public ILessonBuilder WithTitle(string title)
     {
         _title = title;
         return this;
     }
 
-    // Creează și adaugă un ContentStep în lista temporară.
-    public ILessonBuilder AddContentStep(Guid id, int order, string content)
+    public ILessonBuilder WithCourseId(Guid courseId)
     {
-        var step = new ContentStep(id, order, content);
-        _steps.Add(step);
+        _courseId = courseId;
         return this;
     }
 
-    // Creează și adaugă un QuestionStep în lista temporară.
-    public ILessonBuilder AddQuestionStep(
-        Guid id,
-        int order,
-        string questionText,
-        IReadOnlyList<string> options,
-        int correctOptionIndex)
+    public ILessonBuilder WithOrder(int order)
     {
-        var step = new QuestionStep(id, order, questionText, options, correctOptionIndex);
-        _steps.Add(step);
+        _order = order;
         return this;
     }
 
-    // Construiește obiectul final Lesson.
-    // Pașii sunt sortați înainte de adăugare pentru a menține ordinea corectă.
+    public ILessonBuilder WithContent(string content)
+    {
+        _content = content;
+        return this;
+    }
+
     public Lesson Build()
     {
-        var lesson = new Lesson(_id, _title);
+        if (_id == Guid.Empty) throw new InvalidOperationException("Id-ul lecției nu a fost setat.");
+        if (_courseId == Guid.Empty) throw new InvalidOperationException("CourseId-ul nu a fost setat.");
+        if (_order <= 0) throw new InvalidOperationException("Order-ul lecției nu a fost setat.");
 
-        foreach (var step in _steps.OrderBy(s => s.Order))
-        {
-            lesson.AddStep(step);
-        }
-
-        return lesson;
+        return new Lesson(_id, _title, _content, _order, _courseId);
     }
 
-    // Resetează starea pentru reutilizarea builder-ului.
     public void Reset()
     {
         _id = Guid.Empty;
         _title = string.Empty;
-        _steps.Clear();
+        _courseId = Guid.Empty;
+        _order = 0;
+        _content = string.Empty;
     }
 }

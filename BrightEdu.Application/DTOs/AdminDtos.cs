@@ -81,10 +81,10 @@ public sealed record AdminLessonDto(
 
 // ─── Quiz ─────────────────────────────────────────────────────────────────────
 
-public sealed record CreateQuizForLessonRequest(Guid LessonId, string Title, int PassingScore, int MaxAttempts, bool ShuffleQuestions, bool ShuffleAnswers);
-public sealed record CreateQuizForModuleRequest(Guid ModuleId, string Title, int PassingScore, int MaxAttempts, bool ShuffleQuestions, bool ShuffleAnswers);
-public sealed record UpdateQuizRequest(string Title, int PassingScore, int MaxAttempts, bool ShuffleQuestions, bool ShuffleAnswers);
-public sealed record AdminQuizDto(Guid Id, Guid? LessonId, Guid? ModuleId, string Title, int PassingScore, int MaxAttempts, bool ShuffleQuestions, bool ShuffleAnswers, string State, int QuestionCount);
+public sealed record CreateQuizForLessonRequest(Guid LessonId, string Title, int PassingScore, int MaxAttempts, bool ShuffleQuestions, bool ShuffleAnswers, bool ShowMistakesAfterAttempt = false, bool ShowOnlyWrongAnswers = false, bool ShowCorrectAnswer = false);
+public sealed record CreateQuizForModuleRequest(Guid ModuleId, string Title, int PassingScore, int MaxAttempts, bool ShuffleQuestions, bool ShuffleAnswers, bool ShowMistakesAfterAttempt = false, bool ShowOnlyWrongAnswers = false, bool ShowCorrectAnswer = false);
+public sealed record UpdateQuizRequest(string Title, int PassingScore, int MaxAttempts, bool ShuffleQuestions, bool ShuffleAnswers, bool ShowMistakesAfterAttempt = false, bool ShowOnlyWrongAnswers = false, bool ShowCorrectAnswer = false);
+public sealed record AdminQuizDto(Guid Id, Guid? LessonId, Guid? ModuleId, string Title, int PassingScore, int MaxAttempts, bool ShuffleQuestions, bool ShuffleAnswers, bool ShowMistakesAfterAttempt, bool ShowOnlyWrongAnswers, bool ShowCorrectAnswer, string State, int QuestionCount);
 
 // ─── Question ─────────────────────────────────────────────────────────────────
 

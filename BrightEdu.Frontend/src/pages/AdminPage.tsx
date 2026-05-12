@@ -226,6 +226,8 @@ function CoursesTab({ token, onSelectCourse }: { token: string; onSelectCourse: 
                 maxAttempts: 3,
                 shuffleQuestions: false,
                 shuffleAnswers: false,
+                showMistakesAfterAttempt: false,
+                showOnlyWrongAnswers: false,
                 published: false,
                 questions: [
                   {
@@ -1435,8 +1437,8 @@ function QuizTab({ token, target }: { token: string; target: QuizTarget }) {
   const [view, setView] = useState<"list" | "form" | "question-form">("list");
   const [editingQuestion, setEditingQuestion] = useState<AdminQuestion | null>(null);
   const [saving, setSaving] = useState(false);
-  const [quizForm, setQuizForm] = useState<{ title: string; passingScore: number; maxAttempts: number; shuffleQuestions: boolean; shuffleAnswers: boolean }>({
-    title: "", passingScore: 60, maxAttempts: 3, shuffleQuestions: false, shuffleAnswers: false
+  const [quizForm, setQuizForm] = useState<{ title: string; passingScore: number; maxAttempts: number; shuffleQuestions: boolean; shuffleAnswers: boolean; showMistakesAfterAttempt: boolean; showOnlyWrongAnswers: boolean }>({
+    title: "", passingScore: 60, maxAttempts: 3, shuffleQuestions: false, shuffleAnswers: false, showMistakesAfterAttempt: false, showOnlyWrongAnswers: false, showCorrectAnswer: false
   });
 
   const loadQuiz = async () => {
@@ -1453,7 +1455,7 @@ function QuizTab({ token, target }: { token: string; target: QuizTarget }) {
       }
       setQuiz(loaded);
       if (loaded) {
-        setQuizForm({ title: loaded.title, passingScore: loaded.passingScore, maxAttempts: loaded.maxAttempts, shuffleQuestions: loaded.shuffleQuestions, shuffleAnswers: loaded.shuffleAnswers });
+        setQuizForm({ title: loaded.title, passingScore: loaded.passingScore, maxAttempts: loaded.maxAttempts, shuffleQuestions: loaded.shuffleQuestions, shuffleAnswers: loaded.shuffleAnswers, showMistakesAfterAttempt: loaded.showMistakesAfterAttempt, showOnlyWrongAnswers: loaded.showOnlyWrongAnswers, showCorrectAnswer: loaded.showCorrectAnswer });
         const qs = await brightEduApi.adminGetQuestions(loaded.id, token);
         setQuestions(qs);
       }
@@ -1475,7 +1477,10 @@ function QuizTab({ token, target }: { token: string; target: QuizTarget }) {
         passingScore: quizForm.passingScore,
         maxAttempts: quizForm.maxAttempts,
         shuffleQuestions: quizForm.shuffleQuestions,
-        shuffleAnswers: quizForm.shuffleAnswers
+        shuffleAnswers: quizForm.shuffleAnswers,
+        showMistakesAfterAttempt: quizForm.showMistakesAfterAttempt,
+        showOnlyWrongAnswers: quizForm.showOnlyWrongAnswers,
+        showCorrectAnswer: quizForm.showCorrectAnswer
       };
       if (target.type === "lesson") {
         await brightEduApi.adminCreateLessonQuiz(target.id, payload, token);
@@ -1501,7 +1506,10 @@ function QuizTab({ token, target }: { token: string; target: QuizTarget }) {
         passingScore: quizForm.passingScore,
         maxAttempts: quizForm.maxAttempts,
         shuffleQuestions: quizForm.shuffleQuestions,
-        shuffleAnswers: quizForm.shuffleAnswers
+        shuffleAnswers: quizForm.shuffleAnswers,
+        showMistakesAfterAttempt: quizForm.showMistakesAfterAttempt,
+        showOnlyWrongAnswers: quizForm.showOnlyWrongAnswers,
+        showCorrectAnswer: quizForm.showCorrectAnswer
       };
       await brightEduApi.adminUpdateQuiz(quiz.id, payload, token);
       toast.success(t("admin.quizUpdated"));
@@ -1725,8 +1733,8 @@ function QuizSettingsForm({
   form,
   onChange
 }: {
-  form: { title: string; passingScore: number; maxAttempts: number; shuffleQuestions: boolean; shuffleAnswers: boolean };
-  onChange: (f: { title: string; passingScore: number; maxAttempts: number; shuffleQuestions: boolean; shuffleAnswers: boolean }) => void;
+  form: { title: string; passingScore: number; maxAttempts: number; shuffleQuestions: boolean; shuffleAnswers: boolean; showMistakesAfterAttempt: boolean; showOnlyWrongAnswers: boolean; showCorrectAnswer: boolean };
+  onChange: (f: { title: string; passingScore: number; maxAttempts: number; shuffleQuestions: boolean; shuffleAnswers: boolean; showMistakesAfterAttempt: boolean; showOnlyWrongAnswers: boolean; showCorrectAnswer: boolean }) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -1745,7 +1753,7 @@ function QuizSettingsForm({
           <input className="input" type="number" min={0} value={form.maxAttempts} onChange={e => onChange({ ...form, maxAttempts: Number(e.target.value) })} />
         </div>
       </div>
-      <div style={{ display: "flex", gap: "1.5rem" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "1.5rem" }}>
         <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem" }}>
           <input type="checkbox" checked={form.shuffleQuestions} onChange={e => onChange({ ...form, shuffleQuestions: e.target.checked })} />
           {t("admin.shuffleQuestions")}
@@ -1754,6 +1762,22 @@ function QuizSettingsForm({
           <input type="checkbox" checked={form.shuffleAnswers} onChange={e => onChange({ ...form, shuffleAnswers: e.target.checked })} />
           {t("admin.shuffleAnswers")}
         </label>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem" }}>
+          <input type="checkbox" checked={form.showMistakesAfterAttempt} onChange={e => onChange({ ...form, showMistakesAfterAttempt: e.target.checked, showOnlyWrongAnswers: e.target.checked ? form.showOnlyWrongAnswers : false })} />
+          {t("admin.showMistakesAfterAttempt")}
+        </label>
+        {form.showMistakesAfterAttempt && (
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem" }}>
+            <input type="checkbox" checked={form.showOnlyWrongAnswers} onChange={e => onChange({ ...form, showOnlyWrongAnswers: e.target.checked })} />
+            {t("admin.showOnlyWrongAnswers")}
+          </label>
+        )}
+        {form.showMistakesAfterAttempt && (
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem" }}>
+            <input type="checkbox" checked={form.showCorrectAnswer} onChange={e => onChange({ ...form, showCorrectAnswer: e.target.checked })} />
+            {t("admin.showCorrectAnswer")}
+          </label>
+        )}
       </div>
     </div>
   );

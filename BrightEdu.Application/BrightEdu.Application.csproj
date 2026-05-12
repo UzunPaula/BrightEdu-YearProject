@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
@@ -10,10 +10,9 @@
       <ProjectReference Include="..\BrightEdu.Domain\BrightEdu.Domain.csproj" />
     </ItemGroup>
 
+    <!-- Fișiere excluse: patternuri și servicii eliminate (rămân 12 patternuri active) -->
     <ItemGroup>
-      <Compile Remove="DTOs\LessonCreationModel.cs" />
       <Compile Remove="Interfaces\ILessonStepDtoMapper.cs" />
-      <Compile Remove="Interfaces\IGetTemplateAsCreationModelService.cs" />
       <Compile Remove="Interfaces\ICreateLessonWithPrototypeService.cs" />
       <Compile Remove="Interfaces\ICreateLessonWithFactoryMethodService.cs" />
       <Compile Remove="Interfaces\ICreateLessonWithBuilderService.cs" />
@@ -25,40 +24,21 @@
       <Compile Remove="Interfaces\ICourseRepository.cs" />
       <Compile Remove="Features\Lessons\Mapper\**" />
       <Compile Remove="Features\Lessons\CreateLessonWithAbstractFactoryService.cs" />
-      <Compile Remove="Features\Lessons\CreateLessonWithAdapterService.cs" />
       <Compile Remove="Features\Lessons\CreateLessonWithBuilderService.cs" />
       <Compile Remove="Features\Lessons\CreateLessonWithFactoryMethodService.cs" />
       <Compile Remove="Features\Lessons\CreateLessonWithPrototypeService.cs" />
-      <Compile Remove="Features\Lessons\GetTemplateAsCreationModelService.cs" />
-      <Compile Remove="DesignPatterns\Singleton\**" />
-      <Compile Remove="DesignPatterns\FactoryMethod\**" />
-      <Compile Remove="DesignPatterns\Facade\**" />
-      <Compile Remove="DesignPatterns\Composite\**" />
-      <Compile Remove="DesignPatterns\Builder\**" />
-      <Compile Remove="DesignPatterns\Adapter\**" />
-      <Compile Remove="DesignPatterns\AbstractFactory\**" />
+      <Compile Remove="DesignPatterns\FactoryMethod\Steps\ILessonStepCreator.cs" />
+      <Compile Remove="DesignPatterns\FactoryMethod\Steps\ILessonStepCreatorResolver.cs" />
+      <Compile Remove="DesignPatterns\AbstractFactory\Steps\ILessonStepAbstractFactory.cs" />
+      <Compile Remove="DesignPatterns\AbstractFactory\Steps\ILessonStepAbstractFactoryResolver.cs" />
     </ItemGroup>
 
     <ItemGroup>
       <EmbeddedResource Remove="Features\Lessons\Mapper\**" />
-      <EmbeddedResource Remove="DesignPatterns\Singleton\**" />
-      <EmbeddedResource Remove="DesignPatterns\FactoryMethod\**" />
-      <EmbeddedResource Remove="DesignPatterns\Facade\**" />
-      <EmbeddedResource Remove="DesignPatterns\Composite\**" />
-      <EmbeddedResource Remove="DesignPatterns\Builder\**" />
-      <EmbeddedResource Remove="DesignPatterns\Adapter\**" />
-      <EmbeddedResource Remove="DesignPatterns\AbstractFactory\**" />
     </ItemGroup>
 
     <ItemGroup>
       <None Remove="Features\Lessons\Mapper\**" />
-      <None Remove="DesignPatterns\Singleton\**" />
-      <None Remove="DesignPatterns\FactoryMethod\**" />
-      <None Remove="DesignPatterns\Facade\**" />
-      <None Remove="DesignPatterns\Composite\**" />
-      <None Remove="DesignPatterns\Builder\**" />
-      <None Remove="DesignPatterns\Adapter\**" />
-      <None Remove="DesignPatterns\AbstractFactory\**" />
     </ItemGroup>
 
 </Project>

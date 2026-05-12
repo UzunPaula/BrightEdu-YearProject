@@ -58,25 +58,38 @@ public sealed class PublicLessonService : IPublicLessonService
             lesson.Quiz?.Id,
             lesson.Quiz is null
                 ? null
-                : new LessonQuizDto(
-                    lesson.Quiz.Id,
-                    lesson.Quiz.Title,
-                    lesson.Quiz.PassingScore,
-                    lesson.Quiz.MaxAttempts,
-                    lesson.Quiz.Questions
-                        .OrderBy(x => x.Order)
-                        .Select(question => new QuizQuestionDto(
-                            question.Id,
-                            question.Text,
-                            question.Type.ToString(),
-                            question.Order,
-                            question.Answers
-                                .OrderBy(x => x.Order)
-                                .Select(answer => new QuizAnswerOptionDto(
-                                    answer.Id,
-                                    answer.Text))
-                                .ToList()))
-                        .ToList()));
+                : BuildQuizDto(lesson.Quiz));
+    }
+
+    private static LessonQuizDto BuildQuizDto(Domain.Entities.Quiz quiz)
+    {
+        var rng = Random.Shared;
+
+        var questions = quiz.ShuffleQuestions
+            ? quiz.Questions.OrderBy(_ => rng.Next())
+            : quiz.Questions.OrderBy(x => x.Order);
+
+        return new LessonQuizDto(
+            quiz.Id,
+            quiz.Title,
+            quiz.PassingScore,
+            quiz.MaxAttempts,
+            quiz.ShowMistakesAfterAttempt,
+            quiz.ShowOnlyWrongAnswers,
+            quiz.ShowCorrectAnswer,
+            questions.Select(question =>
+            {
+                var answers = quiz.ShuffleAnswers
+                    ? question.Answers.OrderBy(_ => rng.Next())
+                    : question.Answers.OrderBy(x => x.Order);
+
+                return new QuizQuestionDto(
+                    question.Id,
+                    question.Text,
+                    question.Type.ToString(),
+                    question.Order,
+                    answers.Select(a => new QuizAnswerOptionDto(a.Id, a.Text)).ToList());
+            }).ToList());
     }
 
     private static LanguageCode ParseLang(string lang) => lang.ToLowerInvariant() switch

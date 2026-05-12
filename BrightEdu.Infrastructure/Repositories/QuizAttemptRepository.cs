@@ -31,8 +31,24 @@ public sealed class QuizAttemptRepository : IQuizAttemptRepository
     public async Task<IReadOnlyList<QuizAttempt>> GetForStudentByQuizAsync(Guid quizId, Guid studentId, CancellationToken ct = default)
     {
         return await _dbContext.QuizAttempts
+            .Include(x => x.Answers)
+            .Include(x => x.Quiz)
+                .ThenInclude(q => q.Questions)
+                .ThenInclude(q => q.Translations)
+            .Include(x => x.Quiz)
+                .ThenInclude(q => q.Questions)
+                .ThenInclude(q => q.Answers)
+                .ThenInclude(a => a.Translations)
             .Where(x => x.QuizId == quizId && x.StudentId == studentId)
             .OrderByDescending(x => x.AttemptNumber)
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<QuizAttempt>> GetAllSubmittedForStudentAsync(Guid studentId, CancellationToken ct = default)
+    {
+        return await _dbContext.QuizAttempts
+            .Where(x => x.StudentId == studentId && x.SubmittedAt != null)
             .AsNoTracking()
             .ToListAsync(ct);
     }

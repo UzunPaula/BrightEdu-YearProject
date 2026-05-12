@@ -16,6 +16,21 @@ public sealed record LoginRequestDto(
 public sealed record AuthResponseDto(
     Guid UserId,
     string Email,
+    string FirstName,
+    string LastName,
     string AccessToken,
     DateTime ExpiresAt,
-    IReadOnlyList<string> Roles);
+    IReadOnlyList<string> Roles,
+    LanguageCode PreferredLanguage);
+
+public sealed record UserProfileDto(
+    Guid UserId,
+    string Email,
+    string FirstName,
+    string LastName,
+    LanguageCode PreferredLanguage);
+
+public sealed record UpdateProfileRequest(
+    string FirstName,
+    string LastName,
+    LanguageCode PreferredLanguage);

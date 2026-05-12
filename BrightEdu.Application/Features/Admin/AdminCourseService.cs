@@ -1,4 +1,4 @@
-using BrightEdu.Application.DesignPatterns.Command;
+using BrightEdu.Application.DesignPatterns.State;
 using BrightEdu.Application.DTOs;
 using BrightEdu.Application.Interfaces;
 using BrightEdu.Domain.Entities;
@@ -73,9 +73,12 @@ public sealed class AdminCourseService : IAdminCourseService
         var course = await _repository.GetByIdAsync(id, ct);
         if (course is null) return false;
 
-        // Command + State — validează tranziția și execută comanda
-        var invoker = new CourseCommandInvoker();
-        await invoker.ExecuteAsync(new PublishCourseCommand(course, _repository), ct);
+        // State — validează tranziția și aplică noua stare
+        var sm = new CourseStateMachine(course.State);
+        if (!sm.CanPublish())
+            throw new InvalidOperationException($"Cursul nu poate fi publicat din starea {course.State}.");
+        course.SetState(sm.Publish());
+        await _repository.SaveAsync(ct);
         return true;
     }
 
@@ -84,9 +87,12 @@ public sealed class AdminCourseService : IAdminCourseService
         var course = await _repository.GetByIdAsync(id, ct);
         if (course is null) return false;
 
-        // Command + State — validează tranziția și execută comanda
-        var invoker = new CourseCommandInvoker();
-        await invoker.ExecuteAsync(new ArchiveCourseCommand(course, _repository), ct);
+        // State — validează tranziția și aplică noua stare
+        var sm = new CourseStateMachine(course.State);
+        if (!sm.CanArchive())
+            throw new InvalidOperationException($"Cursul nu poate fi arhivat din starea {course.State}.");
+        course.SetState(sm.Archive());
+        await _repository.SaveAsync(ct);
         return true;
     }
 

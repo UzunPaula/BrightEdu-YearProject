@@ -1,4 +1,3 @@
-using BrightEdu.Application.DesignPatterns.Mediator;
 using BrightEdu.Application.DTOs;
 using BrightEdu.Application.Interfaces;
 using BrightEdu.Domain.Entities;
@@ -15,16 +14,13 @@ public sealed class LessonProgressService : ILessonProgressService
 {
     private readonly ILessonProgressRepository _lessonProgressRepository;
     private readonly ILessonRepository _lessonRepository;
-    private readonly ILessonCompletionMediator _mediator;
 
     public LessonProgressService(
         ILessonProgressRepository lessonProgressRepository,
-        ILessonRepository lessonRepository,
-        ILessonCompletionMediator mediator)
+        ILessonRepository lessonRepository)
     {
         _lessonProgressRepository = lessonProgressRepository;
         _lessonRepository = lessonRepository;
-        _mediator = mediator;
     }
 
     public async Task<LessonProgressDto> MarkOpenedAsync(Guid studentId, Guid lessonId, CancellationToken ct = default)
@@ -42,9 +38,7 @@ public sealed class LessonProgressService : ILessonProgressService
         progress.MarkCompleted(request.IsCompleted);
         await _lessonProgressRepository.SaveChangesAsync(ct);
 
-        // Mediator — notifică colegii doar la prima finalizare a lecției
-        if (request.IsCompleted && !wasCompleted)
-            await _mediator.NotifyLessonCompletedAsync(studentId, request.LessonId, ct);
+        // Progresul cursului este calculat dinamic în StudentDashboardService — nu necesită notificare explicită.
 
         return Map(progress, lesson);
     }

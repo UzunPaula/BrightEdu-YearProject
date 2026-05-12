@@ -17,6 +17,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem("brightedu.auth");
+      window.location.href = "/login";
+      return undefined as T;
+    }
+
     let message = "Request failed.";
 
     try {
@@ -44,6 +50,12 @@ export async function apiUpload<T>(path: string, formData: FormData, token: stri
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem("brightedu.auth");
+      window.location.href = "/login";
+      return undefined as T;
+    }
+
     let message = "Upload failed.";
     try {
       const payload = (await response.json()) as { message?: string };

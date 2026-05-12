@@ -37,6 +37,15 @@ public class User
     public LanguageCode PreferredLanguage { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
+    public void UpdateProfile(string firstName, string lastName, LanguageCode preferredLanguage)
+    {
+        if (string.IsNullOrWhiteSpace(firstName)) throw new ArgumentException("FirstName invalid.", nameof(firstName));
+        if (string.IsNullOrWhiteSpace(lastName)) throw new ArgumentException("LastName invalid.", nameof(lastName));
+        FirstName = firstName.Trim();
+        LastName = lastName.Trim();
+        PreferredLanguage = preferredLanguage;
+    }
+
     public IReadOnlyCollection<UserRole> UserRoles => _userRoles.AsReadOnly();
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
     public IReadOnlyCollection<Enrollment> Enrollments => _enrollments.AsReadOnly();

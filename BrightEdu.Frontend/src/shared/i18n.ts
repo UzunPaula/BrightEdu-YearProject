@@ -12,11 +12,12 @@ const resources = {
         register: "Înregistrare",
         dashboard: "Dashboard",
         myCourses: "Cursurile mele",
+        profile: "Setări profil",
         logout: "Ieșire"
       },
       hero: {
         eyebrow: "Platformă educațională IT",
-        title: "Învață clar, exersează rapid, crești constant.",
+        title: "Învață ușor, exersează rapid, crești constant.",
         text: "BrightEdu combină teoria, quiz-urile și resursele interactive într-o experiență modernă pentru studenți și administrare ușoară pentru profesor.",
         primary: "Explorează cursurile",
         secondary: "Panou admin",
@@ -30,7 +31,8 @@ const resources = {
         catalogTitle: "Cursuri pilot BrightEdu",
         viewCourse: "Vezi cursul",
         descPlaceholder: "Descriere în curs de completare.",
-        loadingCourses: "Încărcăm cursurile publice..."
+        loadingCourses: "Încărcăm cursurile publice...",
+        viewAll: "Vezi toate cursurile"
       },
       courses: {
         eyebrow: "Cursuri",
@@ -90,6 +92,12 @@ const resources = {
         attemptNumber: "Încercarea #{{number}}",
         attemptStarted: "Încercarea #{{number}} a fost pornită cu succes.",
         attemptInfo: "Scor: {{score}}% | {{status}} | Start: {{date}}",
+        reviewMistakes: "Greșeli",
+        questionCorrect: "Corect",
+        questionIncorrect: "Incorect",
+        yourAnswer: "Răspunsul tău",
+        correctAnswer: "Răspuns corect",
+        noAnswerGiven: "Fără răspuns",
         imageNoUrl: "Imagine fără URL.",
         videoNoUrl: "Video fără URL.",
         pdfNoUrl: "PDF fără URL.",
@@ -109,7 +117,13 @@ const resources = {
         loading: "Încărcăm lecția...",
         missingId: "Id-ul lecției lipsește.",
         timeout: "(timeout — codul nu a produs output)",
-        noOutput: "(fără output)"
+        noOutput: "(fără output)",
+        gateTitle: "Conținut restricționat",
+        gateText: "Această lecție este disponibilă doar pentru studenții înscriși la curs. Înscrie-te pentru a debloca toate lecțiile, quiz-urile și materialele.",
+        gateCta: "Înscrie-te la curs",
+        previewTitle: "Aceasta este o lecție de previzualizare",
+        previewText: "Înscrie-te la curs pentru a debloca toate lecțiile, quiz-urile și pentru a urmări progresul tău.",
+        previewCta: "Înscrie-te acum"
       },
       student: {
         eyebrow: "Student",
@@ -130,7 +144,32 @@ const resources = {
         openLesson: "Deschide lecția",
         noActivity: "Nu există încă activitate în lecții.",
         loading: "Încărcăm progresul tău...",
-        notAuthenticated: "Autentifică-te pentru a vedea dashboardul studentului."
+        notAuthenticated: "Autentifică-te pentru a vedea dashboardul studentului.",
+        statEnrolled: "Cursuri înscrise",
+        statLessons: "Lecții completate",
+        statProgress: "Progres general",
+        statCompleted: "Cursuri finalizate",
+        statLastActivity: "Ultima activitate",
+        overallProgress: "Progres total",
+        quizEyebrow: "Performanță quiz-uri",
+        quizTitle: "Rezultate quiz-uri",
+        quizAttempts: "Încercări totale",
+        quizUnique: "Quiz-uri distincte",
+        quizPassed: "Promovate",
+        quizAvg: "Scor mediu",
+        quizBest: "Cel mai bun scor"
+      },
+      myCourses: {
+        eyebrow: "Cursurile mele",
+        title: "Cursuri înscrise",
+        subtitle: "Lista cursurilor la care ești abonat și progresul tău.",
+        lessons: "lecții",
+        enrolledAt: "Înscris la",
+        continue: "Continuă cursul",
+        review: "Revizuiește cursul",
+        empty: "Nu ești înscris la niciun curs",
+        emptyHint: "Explorează catalogul și înscrie-te la un curs pentru a începe să înveți.",
+        browseCourses: "Explorează cursurile"
       },
       login: {
         eyebrow: "Auth",
@@ -287,6 +326,9 @@ const resources = {
         maxAttempts: "Max încercări (0 = nelimitat)",
         shuffleQuestions: "Amestecă întrebările",
         shuffleAnswers: "Amestecă răspunsurile",
+        showMistakesAfterAttempt: "Arată greșelile după încercare",
+        showOnlyWrongAnswers: "Arată doar întrebările greșite",
+        showCorrectAnswer: "Arată răspunsul corect",
         quizCreated: "Quiz creat cu succes.",
         quizUpdated: "Quiz actualizat.",
         quizDeleted: "Quiz șters.",
@@ -325,6 +367,25 @@ const resources = {
         tabModules: "Module — {{title}}",
         tabLessons: "Lecții — {{title}}",
         tabQuiz: "Quiz — {{title}}"
+      },
+      profile: {
+        eyebrow: "Cont",
+        title: "Setări profil",
+        subtitle: "Vizualizează și editează informațiile contului tău.",
+        sectionPersonal: "Informații personale",
+        sectionPreferences: "Preferințe",
+        firstName: "Prenume",
+        lastName: "Nume",
+        email: "Email",
+        preferredLanguage: "Limbă preferată",
+        langRo: "Română",
+        langEn: "English",
+        langRu: "Русский",
+        save: "Salvează modificările",
+        saving: "Se salvează...",
+        saved: "Profilul a fost actualizat.",
+        loadError: "Nu am putut încărca profilul.",
+        saveError: "Nu am putut salva modificările."
       }
     }
   },
@@ -338,6 +399,7 @@ const resources = {
         register: "Register",
         dashboard: "Dashboard",
         myCourses: "My courses",
+        profile: "Profile settings",
         logout: "Logout"
       },
       hero: {
@@ -356,7 +418,8 @@ const resources = {
         catalogTitle: "BrightEdu Pilot Courses",
         viewCourse: "View course",
         descPlaceholder: "Description coming soon.",
-        loadingCourses: "Loading public courses..."
+        loadingCourses: "Loading public courses...",
+        viewAll: "View all courses"
       },
       courses: {
         eyebrow: "Courses",
@@ -416,6 +479,12 @@ const resources = {
         attemptNumber: "Attempt #{{number}}",
         attemptStarted: "Attempt #{{number}} started successfully.",
         attemptInfo: "Score: {{score}}% | {{status}} | Start: {{date}}",
+        reviewMistakes: "Mistakes",
+        questionCorrect: "Correct",
+        questionIncorrect: "Incorrect",
+        yourAnswer: "Your answer",
+        correctAnswer: "Correct answer",
+        noAnswerGiven: "No answer given",
         imageNoUrl: "Image without URL.",
         videoNoUrl: "Video without URL.",
         pdfNoUrl: "PDF without URL.",
@@ -435,7 +504,13 @@ const resources = {
         loading: "Loading lesson...",
         missingId: "Lesson ID is missing.",
         timeout: "(timeout — code produced no output)",
-        noOutput: "(no output)"
+        noOutput: "(no output)",
+        gateTitle: "Restricted content",
+        gateText: "This lesson is only available to students enrolled in the course. Enroll to unlock all lessons, quizzes and materials.",
+        gateCta: "Enroll in course",
+        previewTitle: "This is a preview lesson",
+        previewText: "Enroll in the course to unlock all lessons, quizzes and track your progress.",
+        previewCta: "Enroll now"
       },
       student: {
         eyebrow: "Student",
@@ -456,7 +531,32 @@ const resources = {
         openLesson: "Open lesson",
         noActivity: "No lesson activity yet.",
         loading: "Loading your progress...",
-        notAuthenticated: "Please log in to view the student dashboard."
+        notAuthenticated: "Please log in to view the student dashboard.",
+        statEnrolled: "Enrolled courses",
+        statLessons: "Lessons completed",
+        statProgress: "Overall progress",
+        statCompleted: "Finished courses",
+        statLastActivity: "Last activity",
+        overallProgress: "Overall progress",
+        quizEyebrow: "Quiz performance",
+        quizTitle: "Quiz results",
+        quizAttempts: "Total attempts",
+        quizUnique: "Distinct quizzes",
+        quizPassed: "Passed",
+        quizAvg: "Average score",
+        quizBest: "Best score"
+      },
+      myCourses: {
+        eyebrow: "My courses",
+        title: "Enrolled courses",
+        subtitle: "Courses you are subscribed to and your progress.",
+        lessons: "lessons",
+        enrolledAt: "Enrolled at",
+        continue: "Continue course",
+        review: "Review course",
+        empty: "You are not enrolled in any course",
+        emptyHint: "Browse the catalog and enroll in a course to start learning.",
+        browseCourses: "Browse courses"
       },
       login: {
         eyebrow: "Auth",
@@ -613,6 +713,9 @@ const resources = {
         maxAttempts: "Max attempts (0 = unlimited)",
         shuffleQuestions: "Shuffle questions",
         shuffleAnswers: "Shuffle answers",
+        showMistakesAfterAttempt: "Show mistakes after attempt",
+        showOnlyWrongAnswers: "Show only wrong questions",
+        showCorrectAnswer: "Show correct answer",
         quizCreated: "Quiz created successfully.",
         quizUpdated: "Quiz updated.",
         quizDeleted: "Quiz deleted.",
@@ -651,6 +754,25 @@ const resources = {
         tabModules: "Modules — {{title}}",
         tabLessons: "Lessons — {{title}}",
         tabQuiz: "Quiz — {{title}}"
+      },
+      profile: {
+        eyebrow: "Account",
+        title: "Profile settings",
+        subtitle: "View and edit your account information.",
+        sectionPersonal: "Personal information",
+        sectionPreferences: "Preferences",
+        firstName: "First name",
+        lastName: "Last name",
+        email: "Email",
+        preferredLanguage: "Preferred language",
+        langRo: "Română",
+        langEn: "English",
+        langRu: "Русский",
+        save: "Save changes",
+        saving: "Saving...",
+        saved: "Profile updated.",
+        loadError: "Failed to load profile.",
+        saveError: "Failed to save changes."
       }
     }
   },
@@ -664,6 +786,7 @@ const resources = {
         register: "Регистрация",
         dashboard: "Дэшборд",
         myCourses: "Мои курсы",
+        profile: "Настройки профиля",
         logout: "Выйти"
       },
       hero: {
@@ -682,7 +805,8 @@ const resources = {
         catalogTitle: "Пилотные курсы BrightEdu",
         viewCourse: "Открыть курс",
         descPlaceholder: "Описание готовится.",
-        loadingCourses: "Загружаем публичные курсы..."
+        loadingCourses: "Загружаем публичные курсы...",
+        viewAll: "Смотреть все курсы"
       },
       courses: {
         eyebrow: "Курсы",
@@ -742,6 +866,12 @@ const resources = {
         attemptNumber: "Попытка #{{number}}",
         attemptStarted: "Попытка #{{number}} успешно запущена.",
         attemptInfo: "Балл: {{score}}% | {{status}} | Начало: {{date}}",
+        reviewMistakes: "Ошибки",
+        questionCorrect: "Верно",
+        questionIncorrect: "Неверно",
+        yourAnswer: "Ваш ответ",
+        correctAnswer: "Правильный ответ",
+        noAnswerGiven: "Нет ответа",
         imageNoUrl: "Изображение без URL.",
         videoNoUrl: "Видео без URL.",
         pdfNoUrl: "PDF без URL.",
@@ -761,7 +891,13 @@ const resources = {
         loading: "Загружаем урок...",
         missingId: "Идентификатор урока отсутствует.",
         timeout: "(таймаут — код не произвёл вывода)",
-        noOutput: "(нет вывода)"
+        noOutput: "(нет вывода)",
+        gateTitle: "Контент ограничен",
+        gateText: "Этот урок доступен только студентам, записавшимся на курс. Запишитесь, чтобы открыть все уроки, тесты и материалы.",
+        gateCta: "Записаться на курс",
+        previewTitle: "Это ознакомительный урок",
+        previewText: "Запишитесь на курс, чтобы открыть все уроки, тесты и отслеживать прогресс.",
+        previewCta: "Записаться сейчас"
       },
       student: {
         eyebrow: "Студент",
@@ -782,7 +918,32 @@ const resources = {
         openLesson: "Открыть урок",
         noActivity: "Активности в уроках пока нет.",
         loading: "Загружаем ваш прогресс...",
-        notAuthenticated: "Войдите, чтобы увидеть дэшборд студента."
+        notAuthenticated: "Войдите, чтобы увидеть дэшборд студента.",
+        statEnrolled: "Записан на курсов",
+        statLessons: "Пройдено уроков",
+        statProgress: "Общий прогресс",
+        statCompleted: "Завершено курсов",
+        statLastActivity: "Последняя активность",
+        overallProgress: "Общий прогресс",
+        quizEyebrow: "Результаты тестов",
+        quizTitle: "Статистика квизов",
+        quizAttempts: "Всего попыток",
+        quizUnique: "Уникальных квизов",
+        quizPassed: "Сдано",
+        quizAvg: "Средний балл",
+        quizBest: "Лучший результат"
+      },
+      myCourses: {
+        eyebrow: "Мои курсы",
+        title: "Записанные курсы",
+        subtitle: "Курсы, на которые вы подписаны, и ваш прогресс.",
+        lessons: "уроков",
+        enrolledAt: "Записан",
+        continue: "Продолжить курс",
+        review: "Повторить курс",
+        empty: "Вы не записаны ни на один курс",
+        emptyHint: "Просмотрите каталог и запишитесь на курс, чтобы начать учиться.",
+        browseCourses: "Смотреть курсы"
       },
       login: {
         eyebrow: "Auth",
@@ -939,6 +1100,9 @@ const resources = {
         maxAttempts: "Макс. попыток (0 = неограничено)",
         shuffleQuestions: "Перемешать вопросы",
         shuffleAnswers: "Перемешать ответы",
+        showMistakesAfterAttempt: "Показывать ошибки после попытки",
+        showOnlyWrongAnswers: "Показывать только неверные вопросы",
+        showCorrectAnswer: "Показывать правильный ответ",
         quizCreated: "Квиз успешно создан.",
         quizUpdated: "Квиз обновлён.",
         quizDeleted: "Квиз удалён.",
@@ -977,6 +1141,25 @@ const resources = {
         tabModules: "Модули — {{title}}",
         tabLessons: "Уроки — {{title}}",
         tabQuiz: "Квиз — {{title}}"
+      },
+      profile: {
+        eyebrow: "Аккаунт",
+        title: "Настройки профиля",
+        subtitle: "Просмотрите и отредактируйте информацию своего аккаунта.",
+        sectionPersonal: "Личная информация",
+        sectionPreferences: "Предпочтения",
+        firstName: "Имя",
+        lastName: "Фамилия",
+        email: "Email",
+        preferredLanguage: "Предпочитаемый язык",
+        langRo: "Română",
+        langEn: "English",
+        langRu: "Русский",
+        save: "Сохранить изменения",
+        saving: "Сохранение...",
+        saved: "Профиль обновлён.",
+        loadError: "Не удалось загрузить профиль.",
+        saveError: "Не удалось сохранить изменения."
       }
     }
   }

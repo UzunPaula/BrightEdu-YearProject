@@ -70,6 +70,9 @@ export type LessonQuiz = {
   title: string;
   passingScore: number;
   maxAttempts: number;
+  showMistakesAfterAttempt: boolean;
+  showOnlyWrongAnswers: boolean;
+  showCorrectAnswer: boolean;
   questions: QuizQuestion[];
 };
 
@@ -93,9 +96,12 @@ export type LessonDetails = {
 export type AuthResponse = {
   userId: string;
   email: string;
+  firstName: string;
+  lastName: string;
   accessToken: string;
   expiresAt: string;
   roles: string[];
+  preferredLanguage: number; // 1=ro, 2=en, 3=ru
 };
 
 export type QuizAttemptResult = {
@@ -125,6 +131,16 @@ export type SubmitQuizAttemptResult = {
   message: string;
 };
 
+export type AttemptQuestionResult = {
+  questionId: string;
+  questionText: string;
+  selectedOptionId: string | null;
+  selectedOptionText: string | null;
+  correctOptionId: string | null;
+  correctOptionText: string | null;
+  isCorrect: boolean;
+};
+
 export type QuizHistoryItem = {
   attemptId: string;
   quizId: string;
@@ -133,6 +149,7 @@ export type QuizHistoryItem = {
   passed: boolean;
   startedAt: string;
   submittedAt: string | null;
+  questionResults: AttemptQuestionResult[] | null;
 };
 
 export type EnrollmentResult = {
@@ -169,9 +186,18 @@ export type StudentCourseProgress = {
   enrolledAt: string;
 };
 
+export type QuizStats = {
+  totalAttempts: number;
+  totalPassed: number;
+  uniqueQuizzes: number;
+  averageScore: number;
+  bestScore: number;
+};
+
 export type StudentDashboard = {
   courses: StudentCourseProgress[];
   recentLessons: LessonProgress[];
+  quizStats: QuizStats;
 };
 
 // ─── Admin types ──────────────────────────────────────────────────────────────
@@ -267,6 +293,9 @@ export type AdminQuiz = {
   maxAttempts: number;
   shuffleQuestions: boolean;
   shuffleAnswers: boolean;
+  showMistakesAfterAttempt: boolean;
+  showOnlyWrongAnswers: boolean;
+  showCorrectAnswer: boolean;
   state: string;
   questionCount: number;
 };
@@ -290,7 +319,7 @@ export type AdminQuestion = {
 
 export type AnswerInputPayload = { text: string; isCorrect: boolean; order: number };
 
-export type CreateQuizPayload = { title: string; passingScore: number; maxAttempts: number; shuffleQuestions: boolean; shuffleAnswers: boolean };
+export type CreateQuizPayload = { title: string; passingScore: number; maxAttempts: number; shuffleQuestions: boolean; shuffleAnswers: boolean; showMistakesAfterAttempt: boolean; showOnlyWrongAnswers: boolean; showCorrectAnswer: boolean };
 export type UpdateQuizPayload = CreateQuizPayload;
 
 export type CreateQuestionPayload = { quizId: string; text: string; type: string; order: number; points: number; answers: AnswerInputPayload[] };
@@ -367,3 +396,17 @@ export type EntityTranslation = {
 export type UpsertCourseTranslationPayload = { title: string; shortDescription?: string; fullDescription?: string };
 export type UpsertModuleTranslationPayload = { title: string; description?: string };
 export type UpsertLessonTranslationPayload = { title: string; summary: string };
+
+export type UserProfile = {
+  userId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  preferredLanguage: number;
+};
+
+export type UpdateProfilePayload = {
+  firstName: string;
+  lastName: string;
+  preferredLanguage: number;
+};

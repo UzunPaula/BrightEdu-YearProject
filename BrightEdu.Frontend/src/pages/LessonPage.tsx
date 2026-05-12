@@ -7,6 +7,7 @@ import { ErrorPanel } from "../shared/components/ErrorPanel";
 import { LoadingPanel } from "../shared/components/LoadingPanel";
 import Editor from "@monaco-editor/react";
 import type {
+  AttemptQuestionResult,
   LessonContentBlock,
   LessonDetails,
   QuizHistoryItem,
@@ -32,6 +33,7 @@ export function LessonPage() {
   const [isLessonCompleted, setIsLessonCompleted] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEnrolled, setIsEnrolled] = useState(false);
   const [isStartingAttempt, setIsStartingAttempt] = useState(false);
   const [isSubmittingAttempt, setIsSubmittingAttempt] = useState(false);
 
@@ -47,8 +49,14 @@ export function LessonPage() {
         const lessonResponse = await brightEduApi.getLessonById(lessonId, i18n.language);
         setLesson(lessonResponse);
         if (user?.accessToken) {
-          const progress = await brightEduApi.markLessonOpened(lessonId, user.accessToken);
+          const [progress, enrollStatus] = await Promise.all([
+            brightEduApi.markLessonOpened(lessonId, user.accessToken),
+            lessonResponse.courseId
+              ? brightEduApi.getEnrollmentStatus(lessonResponse.courseId, user.accessToken).catch(() => null)
+              : null,
+          ]);
           setIsLessonCompleted(progress.isCompleted);
+          setIsEnrolled(enrollStatus?.isEnrolled ?? false);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : t("lesson.loadError"));
@@ -174,9 +182,12 @@ export function LessonPage() {
     }
   };
 
+  const isFirstLesson = lesson?.order === 1;
+  const canViewContent = isEnrolled || isFirstLesson;
+
   return (
     <section className="section">
-      {isLoading ? <LoadingPanel message={t("lesson.loading")} /> : null}
+      {isLoading ? <LoadingPanel text={t("lesson.loading")} /> : null}
       {error ? <ErrorPanel message={error} /> : null}
       {!isLoading && !error && lesson ? (
         <>
@@ -191,7 +202,21 @@ export function LessonPage() {
             <p className="muted">{lesson.summary}</p>
           </div>
 
-          {!isQuizMode ? (
+          {/* ── Enrollment gate: lecție blocată ── */}
+          {!canViewContent ? (
+            <div className="panel" style={{ textAlign: "center", padding: "3rem 2rem" }}>
+              <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔒</div>
+              <h2 style={{ marginBottom: "0.5rem" }}>{t("lesson.gateTitle")}</h2>
+              <p className="muted" style={{ maxWidth: 420, margin: "0 auto 1.5rem" }}>{t("lesson.gateText")}</p>
+              {lesson.courseSlug && (
+                <Link to={`/courses/${lesson.courseSlug}`} className="btn-primary" style={{ textDecoration: "none" }}>
+                  {t("lesson.gateCta")}
+                </Link>
+              )}
+            </div>
+          ) : null}
+
+          {canViewContent && !isQuizMode ? (
             <div className="panel">
               <h3>{t("lesson.theory")}</h3>
               <div className="pill-row">
@@ -223,25 +248,50 @@ export function LessonPage() {
                 </>
               ) : null}
               <div className="actions">
-                {isLessonCompleted ? (
-                  <span className="completion-badge">{t("lesson.completedBadge")}</span>
-                ) : (
-                  <button className="btn-secondary" type="button" onClick={handleMarkLessonCompleted}>
-                    {t("lesson.markCompleted")}
-                  </button>
+                {isEnrolled && (
+                  isLessonCompleted ? (
+                    <span className="completion-badge">{t("lesson.completedBadge")}</span>
+                  ) : (
+                    <button className="btn-secondary" type="button" onClick={handleMarkLessonCompleted}>
+                      {t("lesson.markCompleted")}
+                    </button>
+                  )
                 )}
-                {lesson.quizId ? (
+                {isEnrolled && lesson.quizId ? (
                   <button className="btn-primary" type="button" onClick={handleStartQuiz} disabled={isStartingAttempt}>
                     {isStartingAttempt ? t("lesson.startingQuiz") : t("lesson.startQuiz")}
                   </button>
-                ) : (
+                ) : isEnrolled ? (
                   <span className="muted">{t("lesson.noQuizPublished")}</span>
-                )}
+                ) : null}
               </div>
+
+              {/* Preview banner — vizibil doar pentru prima lecție când nu ești abonat */}
+              {!isEnrolled && isFirstLesson && lesson.courseSlug && (
+                <div style={{
+                  marginTop: "1.5rem",
+                  padding: "1.25rem 1.5rem",
+                  borderRadius: 14,
+                  background: "linear-gradient(135deg, rgba(144,70,207,0.12), rgba(99,36,175,0.08))",
+                  border: "1px solid rgba(144,70,207,0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1.25rem",
+                  flexWrap: "wrap",
+                }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <p style={{ fontWeight: 700, marginBottom: "0.25rem" }}>{t("lesson.previewTitle")}</p>
+                    <p className="muted" style={{ fontSize: "0.88rem", margin: 0 }}>{t("lesson.previewText")}</p>
+                  </div>
+                  <Link to={`/courses/${lesson.courseSlug}`} className="btn-primary" style={{ textDecoration: "none", flexShrink: 0 }}>
+                    {t("lesson.previewCta")}
+                  </Link>
+                </div>
+              )}
             </div>
           ) : null}
 
-          {isQuizMode && lesson.quiz ? (
+          {isEnrolled && isQuizMode && lesson.quiz ? (
             <div className="panel quiz-panel">
               <h3>{lesson.quiz.title}</h3>
               <p className="muted">
@@ -249,10 +299,11 @@ export function LessonPage() {
               </p>
 
               <div className="quiz-questions">
-                {lesson.quiz.questions.map((question) => (
+                {lesson.quiz.questions.map((question, index) => (
                   <QuizQuestionCard
                     key={question.id}
                     question={question}
+                    displayIndex={index + 1}
                     selectedOptionId={selectedAnswers[question.id] ?? null}
                     disabled={!currentAttemptId || isSubmittingAttempt}
                     onSelect={handleSelectOption}
@@ -290,7 +341,7 @@ export function LessonPage() {
             </div>
           ) : null}
 
-          {isQuizMode && lesson.quizId && user?.accessToken ? (
+          {isEnrolled && isQuizMode && lesson.quizId && user?.accessToken ? (
             <div className="panel">
               <h3>{t("lesson.attemptHistory")}</h3>
               {history.length === 0 ? (
@@ -307,6 +358,9 @@ export function LessonPage() {
                           date: new Date(item.startedAt).toLocaleString()
                         })}
                       </p>
+                      {item.questionResults && item.questionResults.length > 0 && (
+                        <AttemptReview results={item.questionResults} />
+                      )}
                     </article>
                   ))}
                 </div>
@@ -680,13 +734,51 @@ function ContentBlock({ blockType, parsed }: { blockType: string; parsed: Record
   }
 }
 
+function AttemptReview({ results }: { results: AttemptQuestionResult[] }) {
+  const { t } = useTranslation();
+  return (
+    <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+      <span style={{ fontWeight: 600, fontSize: "0.85rem", opacity: 0.7 }}>{t("lesson.reviewMistakes")}</span>
+      {results.map((r, i) => (
+        <div key={r.questionId} style={{
+          padding: "0.6rem 0.85rem",
+          borderRadius: 8,
+          background: r.isCorrect ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+          borderLeft: `3px solid ${r.isCorrect ? "#22c55e" : "#ef4444"}`
+        }}>
+          <div style={{ fontWeight: 600, fontSize: "0.875rem", marginBottom: "0.25rem" }}>
+            <span style={{ color: r.isCorrect ? "#22c55e" : "#ef4444", marginRight: "0.4rem" }}>
+              {r.isCorrect ? "✓" : "✗"}
+            </span>
+            {i + 1}. {r.questionText}
+          </div>
+          {!r.isCorrect && (
+            <div style={{ fontSize: "0.82rem", display: "flex", flexDirection: "column", gap: "0.15rem", marginTop: "0.2rem" }}>
+              <span style={{ opacity: 0.8 }}>
+                {t("lesson.yourAnswer")}: <em>{r.selectedOptionText ?? t("lesson.noAnswerGiven")}</em>
+              </span>
+              {r.correctOptionText !== null && r.correctOptionText !== undefined && (
+                <span style={{ color: "#22c55e" }}>
+                  {t("lesson.correctAnswer")}: <em>{r.correctOptionText}</em>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function QuizQuestionCard({
   question,
+  displayIndex,
   selectedOptionId,
   disabled,
   onSelect
 }: {
   question: QuizQuestion;
+  displayIndex: number;
   selectedOptionId: string | null;
   disabled: boolean;
   onSelect: (questionId: string, optionId: string) => void;
@@ -694,7 +786,7 @@ function QuizQuestionCard({
   return (
     <article className="content-block">
       <strong>
-        {question.order}. {question.text}
+        {displayIndex}. {question.text}
       </strong>
       <div className="option-list">
         {question.options.map((option) => (

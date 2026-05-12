@@ -51,7 +51,7 @@ public sealed class AdminQuizService : IAdminQuizService
             throw new ArgumentException("Titlul quiz-ului este obligatoriu.");
 
         var quiz = Quiz.ForLesson(request.Title, request.LessonId);
-        quiz.ConfigureRules(request.PassingScore, request.MaxAttempts, request.ShuffleQuestions, request.ShuffleAnswers);
+        quiz.ConfigureRules(request.PassingScore, request.MaxAttempts, request.ShuffleQuestions, request.ShuffleAnswers, request.ShowMistakesAfterAttempt, request.ShowOnlyWrongAnswers, request.ShowCorrectAnswer);
 
         await _repository.AddAsync(quiz, ct);
         await _repository.SaveAsync(ct);
@@ -65,7 +65,7 @@ public sealed class AdminQuizService : IAdminQuizService
             throw new ArgumentException("Titlul quiz-ului este obligatoriu.");
 
         var quiz = Quiz.ForModule(request.Title, request.ModuleId);
-        quiz.ConfigureRules(request.PassingScore, request.MaxAttempts, request.ShuffleQuestions, request.ShuffleAnswers);
+        quiz.ConfigureRules(request.PassingScore, request.MaxAttempts, request.ShuffleQuestions, request.ShuffleAnswers, request.ShowMistakesAfterAttempt, request.ShowOnlyWrongAnswers, request.ShowCorrectAnswer);
 
         await _repository.AddAsync(quiz, ct);
         await _repository.SaveAsync(ct);
@@ -79,7 +79,7 @@ public sealed class AdminQuizService : IAdminQuizService
         if (quiz is null) throw new KeyNotFoundException($"Quiz {id} negăsit.");
 
         quiz.SetTitle(request.Title);
-        quiz.ConfigureRules(request.PassingScore, request.MaxAttempts, request.ShuffleQuestions, request.ShuffleAnswers);
+        quiz.ConfigureRules(request.PassingScore, request.MaxAttempts, request.ShuffleQuestions, request.ShuffleAnswers, request.ShowMistakesAfterAttempt, request.ShowOnlyWrongAnswers, request.ShowCorrectAnswer);
 
         await _repository.SaveAsync(ct);
         return Map(quiz);
@@ -112,6 +112,9 @@ public sealed class AdminQuizService : IAdminQuizService
             quiz.MaxAttempts,
             quiz.ShuffleQuestions,
             quiz.ShuffleAnswers,
+            quiz.ShowMistakesAfterAttempt,
+            quiz.ShowOnlyWrongAnswers,
+            quiz.ShowCorrectAnswer,
             quiz.State.ToString(),
             quiz.Questions.Count);
 }

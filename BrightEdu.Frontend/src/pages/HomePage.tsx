@@ -74,23 +74,30 @@ export function HomePage() {
         {isLoading ? <LoadingPanel message={t("hero.loadingCourses")} /> : null}
         {error ? <ErrorPanel message={error} /> : null}
         {!isLoading && !error ? (
-          <div className="grid grid-3">
-            {courses.map((course) => (
-              <article key={course.id} className="course-card">
-                <div className="pill-row">
-                  <span className="pill">{course.level}</span>
-                  <span className="pill">{course.state}</span>
-                </div>
-                <h3>{course.title}</h3>
-                <p className="muted">{course.shortDescription ?? t("hero.descPlaceholder")}</p>
-                <div className="actions">
-                  <button className="btn-secondary" onClick={() => handleViewCourse(course.slug)}>
-                    {t("hero.viewCourse")}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
+          <>
+            <div className="grid grid-3">
+              {courses.slice(0, 6).map((course) => (
+                <article key={course.id} className="course-card">
+                  <div className="pill-row">
+                    <span className="pill">{course.level}</span>
+                    <span className="pill">{course.state}</span>
+                  </div>
+                  <h3>{course.title}</h3>
+                  <p className="muted">{course.shortDescription ?? t("hero.descPlaceholder")}</p>
+                  <div className="actions">
+                    <button className="btn-secondary" onClick={() => handleViewCourse(course.slug)}>
+                      {t("hero.viewCourse")}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+            {courses.length > 6 && (
+              <div style={{ textAlign: "center", marginTop: "2rem" }}>
+                <Link className="btn-primary" to="/courses">{t("hero.viewAll")}</Link>
+              </div>
+            )}
+          </>
         ) : null}
       </section>
     </>
