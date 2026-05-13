@@ -2,9 +2,7 @@ using BrightEdu.Domain.Entities;
 
 namespace BrightEdu.Application.DesignPatterns.Strategy;
 
-/// <summary>
-/// Context — selectează și aplică strategia de calcul a scorului.
-/// </summary>
+// Context — selectează și aplică strategia de calcul a scorului.
 public sealed class QuizScoringContext
 {
     private IQuizScoringStrategy _strategy;

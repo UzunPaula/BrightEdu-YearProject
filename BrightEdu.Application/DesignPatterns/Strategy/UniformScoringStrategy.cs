@@ -2,9 +2,7 @@ using BrightEdu.Domain.Entities;
 
 namespace BrightEdu.Application.DesignPatterns.Strategy;
 
-/// <summary>
-/// Strategy concretă — fiecare întrebare are aceeași pondere (scor uniform).
-/// </summary>
+// Strategy concretă — fiecare întrebare are aceeași pondere (scor uniform).
 public sealed class UniformScoringStrategy : IQuizScoringStrategy
 {
     public decimal CalculateScore(

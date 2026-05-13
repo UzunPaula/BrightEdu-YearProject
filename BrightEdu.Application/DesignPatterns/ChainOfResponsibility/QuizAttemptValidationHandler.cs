@@ -2,10 +2,8 @@ using BrightEdu.Domain.Entities;
 
 namespace BrightEdu.Application.DesignPatterns.ChainOfResponsibility;
 
-/// <summary>
-/// Chain of Responsibility — handler abstract pentru validarea lansării unui quiz.
-/// Fiecare handler fie rezolvă cererea, fie o transmite mai departe.
-/// </summary>
+// Chain of Responsibility — handler abstract pentru validarea lansării unui quiz.
+// Fiecare handler fie rezolvă cererea, fie o transmite mai departe.
 public abstract class QuizAttemptValidationHandler
 {
     private QuizAttemptValidationHandler? _next;
@@ -31,3 +29,4 @@ public sealed class QuizAttemptStartContext
     public Guid StudentId { get; init; }
     public int ExistingAttemptsCount { get; init; }
 }
+

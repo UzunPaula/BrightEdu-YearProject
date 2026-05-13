@@ -2,9 +2,7 @@ using BrightEdu.Domain.Enums;
 
 namespace BrightEdu.Application.DesignPatterns.State;
 
-/// <summary>
-/// Mașina de stări — gestionează tranziția unui curs între stări valide.
-/// </summary>
+// Mașina de stări — gestionează tranziția unui curs între stări valide.
 public sealed class CourseStateMachine
 {
     private ICourseStateHandler _current;

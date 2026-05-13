@@ -2,9 +2,7 @@ using BrightEdu.Domain.Enums;
 
 namespace BrightEdu.Application.DesignPatterns.ChainOfResponsibility;
 
-/// <summary>
-/// Handler concret — verifică că quiz-ul este în stare Published.
-/// </summary>
+// Handler concret — verifică că quiz-ul este în stare Published.
 public sealed class QuizActiveHandler : QuizAttemptValidationHandler
 {
     public override Task<string?> HandleAsync(QuizAttemptStartContext context, CancellationToken ct)
@@ -15,3 +13,4 @@ public sealed class QuizActiveHandler : QuizAttemptValidationHandler
         return PassToNextAsync(context, ct);
     }
 }
+

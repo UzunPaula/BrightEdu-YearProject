@@ -2,9 +2,7 @@ using BrightEdu.Application.Interfaces;
 
 namespace BrightEdu.Application.DesignPatterns.Observer;
 
-/// <summary>
-/// Observer concret — marchează automat lecția ca finalizată când studentul trece quiz-ul.
-/// </summary>
+// Observer concret — marchează automat lecția ca finalizată când studentul trece quiz-ul.
 public sealed class LessonAutoCompleteObserver : IQuizResultObserver
 {
     private readonly ILessonProgressRepository _progressRepository;
